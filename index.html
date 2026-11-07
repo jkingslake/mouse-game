@@ -999,6 +999,14 @@ function runTimers(dt) {
 
 /* ---------- ghosts ---------- */
 const catchable = gh => gh.state === 'float' || (gh.state === 'appear' && gh.scale > 0.5);
+
+// Ghosts get a little faster every level (level 1 is round 0). Each step is smaller than the
+// last, so the speed keeps creeping up but levels off just over twice the starting pace:
+// level 2 is +14%, level 3 +27%, level 5 +48%, level 10 +82%. Even the fastest ghost is
+// still well under Pip's top speed, so every ghost can always be caught.
+function ghostSpeedFactor(round) {
+  return 1 + 1.2 * (1 - Math.pow(0.88, round));
+}
 function ghostBounds(r) {
   const b = {
     x0: r + 3 * U + inset.left,
@@ -1025,7 +1033,8 @@ function spawnGhost(opts) {
   ghosts.push({
     x, y, rU, vx: 0, vy: 0, anchor: opts.anchor || null,
     heading: rnd(0, TAU),
-    speedU: rnd(8, 12) * (1 + Math.min(state.round, 3) * 0.08),
+    speedK: ghostSpeedFactor(state.round),
+    speedU: rnd(9, 11) * ghostSpeedFactor(state.round),
     state: opts.instant ? 'float' : 'appear', t: 0,
     scale: opts.instant ? 1 : 0, alpha: opts.instant ? 1 : 0,
     rot: 0, bob: rnd(0, 10), arm: rnd(0, 10),
@@ -1061,9 +1070,9 @@ function updateGhost(gh, dt) {
     }
     gh.heading += rnd(-1, 1) * 1.6 * dt;
     const b = ghostBounds(r);
-    if (gh.x < b.x0 || gh.x > b.x1 || gh.y < b.y0 || gh.y > b.y1) {
-      gh.heading = turnToward(gh.heading, Math.atan2((b.y0 + b.y1) / 2 - gh.y, (b.x0 + b.x1) / 2 - gh.x), 2.5 * dt);
-    }
+    // bounce off the edges of the play area so faster ghosts don't stall against them
+    if ((gh.x < b.x0 && Math.cos(gh.heading) < 0) || (gh.x > b.x1 && Math.cos(gh.heading) > 0)) gh.heading = Math.PI - gh.heading;
+    if ((gh.y < b.y0 && Math.sin(gh.heading) < 0) || (gh.y > b.y1 && Math.sin(gh.heading) > 0)) gh.heading = -gh.heading;
     const sp = gh.speedU * U;
     let dvx = Math.cos(gh.heading) * sp, dvy = Math.sin(gh.heading) * sp * 0.75;
 
@@ -1071,7 +1080,13 @@ function updateGhost(gh, dt) {
     let nerv = 0;
     if (state.mode === 'play') {
       const dx = gh.x - mouse.x, dy = gh.y - mouse.y, d = Math.hypot(dx, dy) || 1, R = 34 * U;
-      if (d < R) { const f = 1 - d / R; nerv = f; dvx += dx / d * 20 * U * f; dvy += dy / d * 20 * U * f; }
+      if (d < R) {
+        // the "eek!" dodge speeds up too, but only half as much, so chasing stays easy
+        const f = 1 - d / R, flee = 20 * U * (1 + (gh.speedK - 1) * 0.5) * f;
+        nerv = f;
+        dvx += dx / d * flee;
+        dvy += dy / d * flee;
+      }
     }
     gh.nervous += (Math.min(1, nerv * 2) - gh.nervous) * Math.min(1, 6 * dt);
 

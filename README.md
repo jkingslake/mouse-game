@@ -11,6 +11,9 @@ After five stars there's a fireworks party and a big cheese for Pip to munch. Th
 - **No way to lose.** There's no timer, score or game over.
 - **Big targets.** Tapping on or near a ghost sends Pip straight to it. Ghosts drift away slowly but
   are always much slower than Pip.
+- **Levels.** Each cheese party starts a new level, and the ghosts float a little faster every level.
+  The speed-up gets smaller each time and levels off at just over twice the starting pace, so the
+  ghosts never get too fast to catch.
 - **No reading needed.** Progress shows as five stars at the top of the screen.
 - **Gentle hints.** If nothing happens for a few seconds, a pulsing ring and a pointing hand show what to tap.
 - **Not scary.** The ghosts are pastel and rosy-cheeked, and they giggle as they leave.
