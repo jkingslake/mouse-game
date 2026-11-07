@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pip and the Ghosts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A gentle tap-and-chase game for toddlers: help Pip the mouse shoo the giggly ghosts away.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pip">
+<meta name="theme-color" content="#1f2460">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grandstander:wght@700;900&display=swap">
+<style>
+/* Layout: one full-bleed canvas stage (a moonlit meadow); a title card floats over it until the first tap. */
+:root {
+  --sky-top: #1f2460;
+  --sky-mid: #3a3a86;
+  --sky-low: #7d62a9;
+  --hill-far: #3b736d;
+  --hill-near: #285549;
+  --grass: #4e946a;
+  --moon: #fff1bf;
+  --cheese: #ffc94a;
+  --cheese-light: #ffe08a;
+  --cheese-deep: #e79a22;
+  --ghost: #fdfcff;
+  --ghost-mint: #c4f2dd;
+  --ghost-pink: #ffd3e4;
+  --ghost-sky: #d0e2ff;
+  --ghost-lemon: #fff0b0;
+  --blush: #ff93b0;
+  --fur: #b9aba6;
+  --fur-light: #efe5df;
+  --ear: #ffb3c4;
+  --tail: #dba1ad;
+  --ink: #2a2144;
+  --star: #ffd95e;
+  --cream: #fff7e6;
+  --wood: #9a6847;
+  --wood-dark: #64402c;
+  --firefly: #eaff8f;
+  --veil: rgba(18, 20, 60, 0.62);
+  --shadow: rgba(10, 8, 30, 0.45);
+
+  --font-display: "Grandstander", "Chalkboard SE", ui-rounded, "Comic Sans MS", system-ui, sans-serif;
+  --font-body: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--sky-top);
+  color: var(--cream);
+}
+body {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  font-family: var(--font-body);
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#safe-probe {
+  position: fixed;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+.title {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(ellipse 75% 70% at 50% 46%, transparent 25%, var(--veil) 100%);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.title.is-leaving {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+.title__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4.5vmin, 44px);
+  min-height: 0;
+}
+.title__name {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  text-align: center;
+  text-wrap: balance;
+  line-height: 0.9;
+}
+.title__pip {
+  font-size: clamp(84px, 21vmin, 220px);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--cheese);
+  text-shadow: 0 0.05em 0 var(--cheese-deep), 0 0.12em 0.3em var(--shadow);
+  transform: rotate(-4deg);
+  animation: wobble 3.2s ease-in-out infinite;
+}
+.title__rest {
+  font-size: clamp(28px, 6.2vmin, 66px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+  text-shadow: 0 0.07em 0 var(--ink), 0 0.1em 0.4em var(--shadow);
+}
+
+.play {
+  width: clamp(112px, 22vmin, 190px);
+  max-width: 100%;
+  aspect-ratio: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 24% 32%, var(--cheese-deep) 0 6%, transparent 6.6%),
+    radial-gradient(circle at 76% 68%, var(--cheese-deep) 0 8%, transparent 8.6%),
+    radial-gradient(circle at 70% 22%, var(--cheese-deep) 0 4.5%, transparent 5%),
+    radial-gradient(circle at 32% 79%, var(--cheese-deep) 0 4%, transparent 4.6%),
+    var(--cheese);
+  box-shadow: inset 0 -0.6em 0 rgba(0, 0, 0, 0.08), 0 0.5em 0 var(--cheese-deep), 0 1.2em 2.2em var(--shadow);
+  font-size: clamp(12px, 2vmin, 18px);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.play svg { width: 46%; height: 46%; }
+.play:focus-visible {
+  outline: 5px solid var(--cream);
+  outline-offset: 8px;
+}
+
+.title__notes {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 36em;
+  margin: 0;
+  font-size: clamp(14px, 2.1vmin, 18px);
+  line-height: 1.4;
+  text-align: center;
+  color: var(--cream);
+  opacity: 0.85;
+}
+.title__notes p { margin: 0; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(-1deg) translateY(-0.03em); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .play, .title__pip { animation: none; }
+  .title { transition: opacity 0.2s linear; }
+}
+</style>
+</head>
+<body>
+<canvas id="stage" role="img" aria-label="Pip the mouse in a moonlit meadow, with friendly ghosts floating in the sky"></canvas>
+
+<div id="title" class="title">
+  <div class="title__main">
+    <h1 class="title__name"><span class="title__pip">Pip</span><span class="title__rest">and the Ghosts</span></h1>
+    <button id="play" class="play" type="button" aria-label="Play">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M38 25 L76 50 L38 75 Z" fill="currentColor" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="title__notes">
+    <p>For grown-ups: tap or drag to steer Pip. Shoo away five ghosts to earn a cheese party.</p>
+    <p data-repo-only>On iPad, tap Share and then Add to Home Screen for full-screen play.</p>
+  </div>
+</div>
+
+<div id="safe-probe" aria-hidden="true"></div>
+
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------
+   Pip and the Ghosts — a no-lose chase game for very small hands.
+   Tap anywhere: Pip scurries there. Touch a ghost: it giggles away
+   and leaves a star. Five stars: fireworks and a cheese to munch.
+------------------------------------------------------------------- */
+
+const TAU = Math.PI * 2;
+const STARS_PER_ROUND = 5;
+
+/* ---------- palette (read from the CSS tokens) ---------- */
+const rootStyle = getComputedStyle(document.documentElement);
+const C = {};
+for (const name of [
+  'sky-top', 'sky-mid', 'sky-low', 'hill-far', 'hill-near', 'grass', 'moon',
+  'cheese', 'cheese-light', 'cheese-deep', 'ghost', 'ghost-mint', 'ghost-pink',
+  'ghost-sky', 'ghost-lemon', 'blush', 'fur', 'fur-light', 'ear', 'tail', 'ink',
+  'star', 'cream', 'wood', 'wood-dark', 'firefly'
+]) {
+  C[name.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase())] = rootStyle.getPropertyValue('--' + name).trim();
+}
+const GHOST_TINTS = [C.ghost, C.ghostMint, C.ghostPink, C.ghostSky, C.ghostLemon];
+const PARTY_COLORS = [C.cheese, C.blush, C.ghostMint, C.ghostSky, C.star, C.cream];
+
+/* ---------- small helpers ---------- */
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const easeOutBack = k => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const easeInOut = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+
+function rgba(hex, a) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(x => x + x).join('');
+  const n = parseInt(h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function turnToward(a, b, step) {
+  let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  return a + clamp(d, -step, step);
+}
+function ellipse(g, x, y, rx, ry, rot) {
+  g.beginPath();
+  g.ellipse(x, y, Math.max(0.01, rx), Math.max(0.01, ry), rot || 0, 0, TAU);
+}
+function starPath(g, x, y, R, r, rot) {
+  g.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = rot + i * Math.PI / 5;
+    const rad = i % 2 ? r : R;
+    if (i === 0) g.moveTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+    else g.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  g.closePath();
+}
+function archPath(g, x, top, w, bottom) {
+  g.beginPath();
+  g.moveTo(x - w / 2, bottom);
+  g.lineTo(x - w / 2, top + w / 2);
+  g.arc(x, top + w / 2, w / 2, Math.PI, 0);
+  g.lineTo(x + w / 2, bottom);
+  g.closePath();
+}
+
+/* ---------- sound: everything is synthesized, nothing to download ---------- */
+const NOTE = { G5: 783.99, C6: 1046.5, D6: 1174.66, E6: 1318.51, G6: 1567.98, A6: 1760, C7: 2093 };
+const Sound = {
+  ctx: null, master: null, noiseBuf: null,
+  unlock() {
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+        const comp = this.ctx.createDynamicsCompressor();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = 0.8;
+        this.master.connect(comp);
+        comp.connect(this.ctx.destination);
+        const len = Math.floor(this.ctx.sampleRate * 1.5);
+        this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const data = this.noiseBuf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        // a silent blip wakes up iOS audio
+        const blip = this.ctx.createBufferSource();
+        blip.buffer = this.ctx.createBuffer(1, 1, 22050);
+        blip.connect(this.ctx.destination);
+        blip.start(0);
+      }
+      if (this.ctx.state !== 'running') this.ctx.resume();
+    } catch (e) { /* no sound is fine */ }
+  },
+  env(gain, t0, vol, attack, dur) {
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  },
+  tone(o) {
+    const c = this.ctx; if (!c) return;
+    const t0 = c.currentTime + (o.delay || 0);
+    const osc = c.createOscillator();
+    osc.type = o.type || 'sine';
+    if (o.path) {
+      osc.frequency.setValueAtTime(o.path[0][1], t0);
+      for (let i = 1; i < o.path.length; i++) osc.frequency.linearRampToValueAtTime(o.path[i][1], t0 + o.path[i][0]);
+    } else {
+      osc.frequency.setValueAtTime(o.f0, t0);
+      if (o.f1) osc.frequency.exponentialRampToValueAtTime(o.f1, t0 + o.dur);
+    }
+    const gain = c.createGain();
+    this.env(gain, t0, o.vol || 0.2, o.attack || 0.008, o.dur);
+    if (o.vib) {
+      const lfo = c.createOscillator(), depth = c.createGain();
+      lfo.frequency.value = o.vib.rate; depth.gain.value = o.vib.depth;
+      lfo.connect(depth); depth.connect(osc.frequency);
+      lfo.start(t0); lfo.stop(t0 + o.dur + 0.05);
+    }
+    osc.connect(gain); gain.connect(this.master);
+    osc.start(t0); osc.stop(t0 + o.dur + 0.05);
+  },
+  noise(o) {
+    const c = this.ctx; if (!c || !this.noiseBuf) return;
+    const t0 = c.currentTime + (o.delay || 0);
+    const src = c.createBufferSource();
+    src.buffer = this.noiseBuf;
+    const f = c.createBiquadFilter();
+    f.type = o.filter || 'lowpass';
+    f.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) f.frequency.exponentialRampToValueAtTime(o.f1, t0 + o.dur);
+    f.Q.value = o.q || 1;
+    const gain = c.createGain();
+    this.env(gain, t0, o.vol || 0.2, o.attack || 0.005, o.dur);
+    src.connect(f); f.connect(gain); gain.connect(this.master);
+    src.start(t0, Math.random() * 0.8); src.stop(t0 + o.dur + 0.05);
+  },
+  squeak(delay = 0) {
+    const p = rnd(0.9, 1.15);
+    this.tone({ type: 'triangle', f0: 1400 * p, f1: 2400 * p, dur: 0.09, vol: 0.16, delay });
+    this.tone({ type: 'sine', f0: 1800 * p, f1: 2900 * p, dur: 0.08, vol: 0.12, delay: delay + 0.1 });
+  },
+  poof() {
+    this.noise({ filter: 'lowpass', f0: 2600, f1: 240, dur: 0.42, vol: 0.45, q: 0.7 });
+    this.tone({ type: 'sine', f0: 420, f1: 110, dur: 0.25, vol: 0.18 });
+  },
+  giggle() {
+    [0, 0.11, 0.22, 0.33].forEach((d, i) => this.tone({ type: 'sine', f0: 1050 - i * 70, f1: 880 - i * 70, dur: 0.09, vol: 0.11, delay: d, vib: { rate: 30, depth: 40 } }));
+    this.noise({ filter: 'bandpass', f0: 500, f1: 1800, q: 1.2, dur: 0.7, vol: 0.08 });
+  },
+  ding(i) {
+    const f = [NOTE.C6, NOTE.D6, NOTE.E6, NOTE.G6, NOTE.C7][i % 5];
+    this.tone({ type: 'sine', f0: f, dur: 0.9, vol: 0.22, attack: 0.005 });
+    this.tone({ type: 'sine', f0: f * 2, dur: 0.4, vol: 0.06 });
+    this.tone({ type: 'triangle', f0: f * 3, dur: 0.18, vol: 0.025 });
+  },
+  wooo() {
+    this.tone({ type: 'sine', path: [[0, 330], [0.35, 520], [0.9, 360]], dur: 0.95, vol: 0.07, attack: 0.25, vib: { rate: 5.5, depth: 14 } });
+  },
+  whoosh() {
+    this.noise({ filter: 'bandpass', f0: 300, f1: 2400, q: 0.9, dur: 0.55, vol: 0.1 });
+    this.tone({ type: 'sine', f0: 500, f1: 1500, dur: 0.5, vol: 0.04 });
+  },
+  pop() {
+    const p = rnd(0.8, 1.25);
+    this.noise({ filter: 'bandpass', f0: 1400 * p, q: 0.8, dur: 0.18, vol: 0.22 });
+    this.tone({ type: 'sine', f0: 700 * p, f1: 180 * p, dur: 0.15, vol: 0.08 });
+  },
+  fanfare() {
+    [[0, 'G5', 0.14], [0.15, 'C6', 0.14], [0.3, 'E6', 0.14], [0.45, 'G6', 0.32], [0.82, 'E6', 0.14], [0.97, 'G6', 0.7]].forEach(([d, n, len]) => {
+      this.tone({ type: 'triangle', f0: NOTE[n], dur: len + 0.1, vol: 0.14, delay: d });
+      this.tone({ type: 'sine', f0: NOTE[n] / 2, dur: len + 0.1, vol: 0.06, delay: d });
+    });
+    this.tone({ type: 'sine', f0: NOTE.C7, dur: 0.8, vol: 0.05, delay: 0.97 });
+  },
+  falling() {
+    this.tone({ type: 'sine', f0: 1500, f1: 480, dur: 0.9, vol: 0.05 });
+  },
+  boing(n) {
+    this.tone({ type: 'sine', path: [[0, 160], [0.08, 420], [0.3, 240]], dur: 0.32, vol: 0.2 / n, vib: { rate: 18, depth: 25 } });
+  },
+  nom() {
+    [0, 0.16].forEach(d => {
+      this.noise({ filter: 'bandpass', f0: 700, q: 1.5, dur: 0.09, vol: 0.35, delay: d });
+      this.tone({ type: 'sine', f0: 240, f1: 170, dur: 0.11, vol: 0.2, delay: d });
+    });
+  },
+  yum() {
+    ['C6', 'E6', 'G6', 'C7'].forEach((k, i) => this.tone({ type: 'triangle', f0: NOTE[k], dur: 0.35, vol: 0.12, delay: i * 0.08 }));
+  }
+};
+
+/* ---------- stage ---------- */
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+const bg = document.createElement('canvas');
+const bctx = bg.getContext('2d');
+const probe = document.getElementById('safe-probe');
+const titleEl = document.getElementById('title');
+const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+let W = 0, H = 0, DPR = 1, U = 1;            // U = 1% of the short side; everything is sized in U
+const inset = { top: 0, right: 0, bottom: 0, left: 0 };
+const world = { doorX: 0, homeX: 0, homeY: 0 };
+let skyStars = [], fireflies = [];
+
+const state = { mode: 'title', time: 0, idle: 0, round: 0, caught: 0, filled: 0, spawnTimer: 0, lastSqueak: -1, hintWoo: 3 };
+const mouse = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, face: 1, faceK: 1, phase: 0, run: 0, hopT: 1, blink: 0, blinkT: 2.5, munch: 0, lock: null, lockCheese: false, placed: false };
+let ghosts = [], particles = [], flyers = [], timers = [];
+const slots = Array.from({ length: STARS_PER_ROUND }, () => ({ filled: false, pop: 0 }));
+let party = null;
+const pointer = { id: null, down: false };
+
+const mouseS = () => 6.2 * U;
+
+function farHillY(x) {
+  return H * 0.70 + Math.sin(x / W * TAU * 1.1 + 0.6) * 5 * U + Math.sin(x / W * TAU * 2.7 + 2.1) * 1.8 * U;
+}
+function nearHillY(x) {
+  return H * 0.81 + Math.sin(x / W * TAU * 0.8 + 2.4) * 3.5 * U + Math.sin(x / W * TAU * 2.2 + 0.3) * 1.2 * U;
+}
+
+function readInsets() {
+  const s = getComputedStyle(probe);
+  inset.top = parseFloat(s.paddingTop) || 0;
+  inset.right = parseFloat(s.paddingRight) || 0;
+  inset.bottom = parseFloat(s.paddingBottom) || 0;
+  inset.left = parseFloat(s.paddingLeft) || 0;
+}
+
+function resize() {
+  const oldW = W, oldH = H;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.max(1, window.innerWidth);
+  H = Math.max(1, window.innerHeight);
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  U = Math.min(W, H) / 100;
+  readInsets();
+
+  if (oldW && oldH && (oldW !== W || oldH !== H)) {
+    const sx = W / oldW, sy = H / oldH;
+    for (const o of [mouse, ...ghosts]) { o.x *= sx; o.y *= sy; }
+    mouse.tx *= sx; mouse.ty *= sy;
+    if (party && party.cheese) { party.cheese.x *= sx; party.cheese.y *= sy; }
+  }
+  buildBackground();
+  seedSky();
+  if (!mouse.placed || state.mode === 'title') {
+    mouse.x = mouse.tx = world.homeX;
+    mouse.y = mouse.ty = world.homeY;
+    mouse.placed = true;
+  }
+}
+
+function buildBackground() {
+  bg.width = canvas.width;
+  bg.height = canvas.height;
+  const g = bctx;
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const rng = mulberry32(11);
+
+  // sky
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, C.skyTop);
+  sky.addColorStop(0.5, C.skyMid);
+  sky.addColorStop(0.86, C.skyLow);
+  g.fillStyle = sky;
+  g.fillRect(0, 0, W, H);
+
+  // the sleepy moon
+  const mr = 9 * U, mx = W - 15 * U - inset.right, my = Math.max(H * 0.2, 22 * U) + inset.top * 0.5;
+  const halo = g.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 3.2);
+  halo.addColorStop(0, rgba(C.moon, 0.33));
+  halo.addColorStop(1, rgba(C.moon, 0));
+  g.fillStyle = halo;
+  g.fillRect(mx - mr * 3.2, my - mr * 3.2, mr * 6.4, mr * 6.4);
+  g.fillStyle = C.moon;
+  ellipse(g, mx, my, mr, mr); g.fill();
+  g.fillStyle = rgba(C.cheeseLight, 0.55);
+  ellipse(g, mx + mr * 0.42, my - mr * 0.45, mr * 0.16, mr * 0.14); g.fill();
+  ellipse(g, mx - mr * 0.55, my + mr * 0.5, mr * 0.11, mr * 0.1); g.fill();
+  g.strokeStyle = C.ink; g.lineCap = 'round'; g.lineWidth = mr * 0.07;
+  for (const sx of [-1, 1]) {
+    g.beginPath(); g.arc(mx + sx * mr * 0.34, my - mr * 0.08, mr * 0.13, 0.12 * Math.PI, 0.88 * Math.PI); g.stroke();
+  }
+  g.beginPath(); g.arc(mx, my + mr * 0.2, mr * 0.22, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+  g.fillStyle = rgba(C.blush, 0.5);
+  ellipse(g, mx - mr * 0.58, my + mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
+  ellipse(g, mx + mr * 0.58, my + mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
+
+  // far hill
+  g.beginPath(); g.moveTo(0, H);
+  for (let x = 0; x <= W + 8; x += 8) g.lineTo(x, farHillY(x));
+  g.lineTo(W, H); g.closePath();
+  g.fillStyle = C.hillFar; g.fill();
+
+  // near hill
+  g.beginPath(); g.moveTo(0, H);
+  for (let x = 0; x <= W + 8; x += 8) g.lineTo(x, nearHillY(x));
+  g.lineTo(W, H); g.closePath();
+  const hill = g.createLinearGradient(0, H * 0.76, 0, H);
+  hill.addColorStop(0, C.grass);
+  hill.addColorStop(1, C.hillNear);
+  g.fillStyle = hill; g.fill();
+
+  // Pip's front door, dug into the near hill
+  const dx = 13 * U + inset.left;
+  const y0 = nearHillY(dx);
+  const dw = 8 * U, dTop = y0 + 3 * U, dBot = dTop + 10 * U;
+  world.doorX = dx;
+  g.fillStyle = C.woodDark;
+  archPath(g, dx, dTop - 0.9 * U, dw + 1.8 * U, dBot); g.fill();
+  g.fillStyle = C.wood;
+  archPath(g, dx, dTop, dw, dBot); g.fill();
+  g.strokeStyle = rgba(C.woodDark, 0.7); g.lineWidth = 0.35 * U;
+  g.beginPath();
+  for (const off of [-0.25, 0, 0.25]) { g.moveTo(dx + off * dw, dTop + (off === 0 ? 0.3 * U : 1.4 * U)); g.lineTo(dx + off * dw, dBot); }
+  g.stroke();
+  g.fillStyle = C.cheese;
+  ellipse(g, dx + dw * 0.3, dTop + dw * 0.75, 0.7 * U, 0.7 * U); g.fill();
+  // round window with a warm light inside
+  const wx = dx + dw / 2 + 4.6 * U, wy = dTop + 2.6 * U, wr = 2 * U;
+  const glow = g.createRadialGradient(wx, wy, wr * 0.5, wx, wy, wr * 3);
+  glow.addColorStop(0, rgba(C.cheese, 0.45)); glow.addColorStop(1, rgba(C.cheese, 0));
+  g.fillStyle = glow; g.fillRect(wx - wr * 3, wy - wr * 3, wr * 6, wr * 6);
+  g.fillStyle = C.cheese; ellipse(g, wx, wy, wr, wr); g.fill();
+  g.strokeStyle = C.woodDark; g.lineWidth = 0.45 * U;
+  g.beginPath(); g.moveTo(wx - wr, wy); g.lineTo(wx + wr, wy); g.moveTo(wx, wy - wr); g.lineTo(wx, wy + wr); g.stroke();
+  g.lineWidth = 0.7 * U; ellipse(g, wx, wy, wr, wr); g.stroke();
+
+  // grass tufts
+  g.fillStyle = C.hillNear;
+  const tufts = Math.round(W / (5 * U));
+  for (let i = 0; i < tufts; i++) {
+    const x = rng() * W, y = nearHillY(x) + 1 * U + rng() * 6 * U;
+    if (Math.abs(x - dx) < dw && y < dBot + U) continue;
+    for (const a of [-1, 0, 1]) {
+      const bx = x + a * 0.55 * U, h = (a === 0 ? 2.3 : 1.6) * U, lean = a * 0.9 * U + (rng() - 0.5) * 0.4 * U;
+      g.beginPath();
+      g.moveTo(bx - 0.32 * U, y);
+      g.quadraticCurveTo(bx + lean * 0.2, y - h * 0.55, bx + lean, y - h);
+      g.quadraticCurveTo(bx + lean * 0.3 + 0.1 * U, y - h * 0.45, bx + 0.32 * U, y);
+      g.closePath();
+      g.fill();
+    }
+  }
+  // flowers
+  const flowerCols = [C.blush, C.cream, C.star];
+  const flowers = Math.max(5, Math.round(W / (14 * U)));
+  for (let i = 0; i < flowers; i++) {
+    const x = rng() * W;
+    if (Math.abs(x - dx) < dw * 2.2) continue;
+    const y = nearHillY(x) + 2 * U + rng() * 8 * U;
+    g.strokeStyle = C.hillNear; g.lineWidth = 0.35 * U;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 2.2 * U); g.stroke();
+    g.fillStyle = flowerCols[i % flowerCols.length];
+    for (let p = 0; p < 5; p++) { const a = p / 5 * TAU; ellipse(g, x + Math.cos(a) * 0.8 * U, y + Math.sin(a) * 0.8 * U, 0.65 * U, 0.65 * U); g.fill(); }
+    g.fillStyle = C.cheese; ellipse(g, x, y, 0.5 * U, 0.5 * U); g.fill();
+  }
+
+  world.homeX = dx + 14 * U;
+  world.homeY = nearHillY(world.homeX) - 0.35 * mouseS();
+}
+
+function seedSky() {
+  const rng = mulberry32(5);
+  skyStars = [];
+  const n = Math.round(clamp(W * H / (110 * U * U), 40, 90));
+  for (let i = 0; i < n; i++) {
+    skyStars.push({ x: rng() * W, y: rng() * H * 0.62, r: (0.18 + rng() * 0.32) * U, ph: rng() * TAU, sp: 0.8 + rng() * 2.2, big: rng() < 0.12 });
+  }
+  fireflies = [];
+  const nf = reduceMotion ? 4 : 8;
+  for (let i = 0; i < nf; i++) {
+    fireflies.push({ x: rnd(0, W), y: rnd(H * 0.55, H * 0.95), ph: rnd(0, TAU), sp: rnd(0.6, 1.4), a: rnd(0, TAU) });
+  }
+}
+
+/* ---------- drawing: Pip ---------- */
+function drawMouse(g, m) {
+  const s = m.s, run = m.run || 0, ph = m.phase || 0, t = m.t || 0, munch = m.munch || 0;
+  g.save();
+  g.translate(m.x, m.y);
+  g.rotate(m.tilt || 0);
+  const sq = m.sq || 0;
+  g.scale((m.face || 1) * (1 + sq), 1 - sq);
+  g.translate(0, -Math.abs(Math.sin(ph)) * s * 0.14 * run + Math.sin(t * 38) * s * 0.03 * munch);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  const outline = rgba(C.ink, 0.22);
+
+  // tail
+  const sway = Math.sin(t * 2.6) * 0.5 + Math.sin(ph * 0.5) * 0.4 * run;
+  g.strokeStyle = C.tail; g.lineWidth = s * 0.15;
+  g.beginPath(); g.moveTo(-s * 0.85, s * 0.28);
+  g.bezierCurveTo(-s * 1.65, s * 0.55, -s * 2.05, s * (-0.1 + sway * 0.25), -s * 1.7, s * (-0.7 + sway * 0.3));
+  g.quadraticCurveTo(-s * 1.5, s * (-1.0 + sway * 0.3), -s * 1.28, s * (-0.82 + sway * 0.25));
+  g.stroke();
+
+  // back foot
+  const stepA = Math.sin(ph) * run, stepB = Math.sin(ph + Math.PI) * run;
+  g.fillStyle = C.ear;
+  ellipse(g, -s * 0.38 + stepB * s * 0.22, s * 0.74 - Math.max(0, stepB) * s * 0.14, s * 0.27, s * 0.14); g.fill();
+
+  // body
+  g.lineWidth = s * 0.05; g.strokeStyle = outline;
+  g.fillStyle = C.fur; ellipse(g, 0, 0, s * 1.05, s * 0.8); g.fill(); g.stroke();
+  g.fillStyle = C.furLight; ellipse(g, s * 0.22, s * 0.28, s * 0.6, s * 0.4); g.fill();
+
+  // back ear
+  g.fillStyle = C.fur; ellipse(g, s * 0.32, -s * 0.98, s * 0.4, s * 0.42); g.fill(); g.stroke();
+  g.fillStyle = C.ear; ellipse(g, s * 0.34, -s * 0.96, s * 0.25, s * 0.27); g.fill();
+
+  // head and snout
+  g.fillStyle = C.fur;
+  ellipse(g, s * 0.82, -s * 0.36, s * 0.62, s * 0.58); g.fill(); g.stroke();
+  ellipse(g, s * 1.32, -s * 0.24, s * 0.44, s * 0.3, -0.08); g.fill();
+  ellipse(g, s * 0.82, -s * 0.36, s * 0.58, s * 0.54); g.fill();
+
+  // front ear
+  g.fillStyle = C.fur; ellipse(g, s * 0.98, -s * 1.08, s * 0.44, s * 0.46); g.fill(); g.stroke();
+  g.fillStyle = C.ear; ellipse(g, s * 1.0, -s * 1.06, s * 0.28, s * 0.3); g.fill();
+
+  // cheek
+  g.fillStyle = C.blush; g.globalAlpha = 0.55;
+  ellipse(g, s * 0.96, -s * 0.1, s * (0.17 + munch * 0.07), s * (0.11 + munch * 0.05)); g.fill();
+  g.globalAlpha = 1;
+
+  // eye
+  if (m.blink > 0) {
+    g.strokeStyle = C.ink; g.lineWidth = s * 0.06;
+    g.beginPath(); g.arc(s * 1.08, -s * 0.55, s * 0.1, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+  } else {
+    g.fillStyle = C.ink; ellipse(g, s * 1.08, -s * 0.52, s * 0.115, s * 0.14); g.fill();
+    g.fillStyle = C.cream; ellipse(g, s * 1.12, -s * 0.57, s * 0.045, s * 0.045); g.fill();
+  }
+
+  // nose and mouth
+  g.fillStyle = C.blush; ellipse(g, s * 1.73, -s * 0.3, s * 0.11, s * 0.095); g.fill();
+  g.strokeStyle = C.ink; g.lineWidth = s * 0.045;
+  if (munch > 0 && Math.sin(t * 38) > 0) {
+    g.fillStyle = C.ink; ellipse(g, s * 1.44, -s * 0.1, s * 0.08, s * 0.06); g.fill();
+  } else {
+    g.beginPath(); g.arc(s * 1.44, -s * 0.18, s * 0.1, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+  }
+
+  // whiskers
+  g.globalAlpha = 0.55; g.lineWidth = s * 0.03;
+  g.beginPath();
+  g.moveTo(s * 1.55, -s * 0.26); g.lineTo(s * 2.1, -s * 0.44);
+  g.moveTo(s * 1.56, -s * 0.21); g.lineTo(s * 2.16, -s * 0.21);
+  g.moveTo(s * 1.55, -s * 0.16); g.lineTo(s * 2.08, -s * 0.0);
+  g.stroke();
+  g.globalAlpha = 1;
+
+  // paw and front foot
+  g.fillStyle = C.ear;
+  ellipse(g, s * 0.64, s * 0.46, s * 0.15, s * 0.12); g.fill();
+  ellipse(g, s * 0.42 + stepA * s * 0.22, s * 0.76 - Math.max(0, stepA) * s * 0.14, s * 0.28, s * 0.14); g.fill();
+  g.restore();
+}
+
+/* ---------- drawing: ghosts ---------- */
+function drawGhost(g, gh, t, look) {
+  const r = gh.r || gh.rU * U;
+  const happy = gh.state === 'away';
+  const bob = Math.sin(t * 2 + gh.bob) * r * 0.08;
+  const shake = gh.state === 'scared' ? Math.sin(gh.t * 70) * r * 0.05 : 0;
+  g.save();
+  g.translate(gh.x + shake, gh.y + bob);
+  g.rotate(gh.rot);
+  const br = 1 + Math.sin(t * 2.4 + gh.bob) * 0.03;
+  g.scale(gh.scale * (2 - br), gh.scale * br);
+  g.globalAlpha = gh.alpha;
+
+  // soft glow
+  const glow = g.createRadialGradient(0, r * 0.2, r * 0.2, 0, r * 0.2, r * 1.9);
+  glow.addColorStop(0, rgba(gh.tint, 0.38));
+  glow.addColorStop(1, rgba(gh.tint, 0));
+  g.fillStyle = glow;
+  g.fillRect(-r * 2, -r * 1.8, r * 4, r * 4);
+
+  // little arms (behind the body)
+  const wave = happy ? Math.sin(t * 16) * 0.7 : Math.sin(t * 3 + gh.arm) * 0.35;
+  g.fillStyle = gh.tint;
+  g.save(); g.translate(-r * 0.9, r * 0.32); g.rotate(-0.5 - wave); ellipse(g, -r * 0.12, 0, r * 0.3, r * 0.16); g.fill(); g.restore();
+  g.save(); g.translate(r * 0.9, r * 0.32); g.rotate(0.5 + wave); ellipse(g, r * 0.12, 0, r * 0.3, r * 0.16); g.fill(); g.restore();
+
+  // body with a wiggly hem
+  const base = r;
+  g.beginPath();
+  g.moveTo(-r, 0);
+  g.arc(0, 0, r, Math.PI, 0);
+  g.lineTo(r, base);
+  const n = 4, seg = 2 * r / n;
+  for (let i = 0; i < n; i++) {
+    const x0 = r - seg * i, x1 = x0 - seg, cx = (x0 + x1) / 2;
+    const w = Math.sin(t * 5 + i * 1.4 + gh.bob) * r * 0.07;
+    g.quadraticCurveTo(cx, base + r * 0.34 + w, x1, base + (i < n - 1 ? w * 0.4 : 0));
+  }
+  g.closePath();
+  const body = g.createLinearGradient(0, -r, 0, base + r * 0.35);
+  body.addColorStop(0, C.ghost);
+  body.addColorStop(1, gh.tint);
+  g.fillStyle = body;
+  g.fill();
+
+  // face
+  let lx = 0, ly = 0;
+  if (look) {
+    lx = clamp((look.x - gh.x) / (r * 5), -1, 1) * r * 0.07;
+    ly = clamp((look.y - gh.y) / (r * 5), -1, 1) * r * 0.06;
+  }
+  const ex = r * 0.34, ey = -r * 0.08;
+  const mode = gh.state === 'scared' ? 'surprised' : happy ? 'giggle' : (gh.nervous > 0.45 ? 'oo' : 'smile');
+
+  g.fillStyle = C.blush; g.globalAlpha = gh.alpha * 0.7;
+  ellipse(g, -r * 0.58 + lx * 0.5, r * 0.16, r * 0.13, r * 0.08); g.fill();
+  ellipse(g, r * 0.58 + lx * 0.5, r * 0.16, r * 0.13, r * 0.08); g.fill();
+  g.globalAlpha = gh.alpha;
+
+  g.strokeStyle = C.ink; g.lineCap = 'round'; g.lineWidth = r * 0.065;
+  if (mode === 'giggle') {
+    for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * ex, ey + r * 0.05, r * 0.1, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+    g.fillStyle = C.ink;
+    g.beginPath(); g.arc(0, r * 0.12, r * 0.18, 0, Math.PI); g.closePath(); g.fill();
+    g.fillStyle = C.blush; ellipse(g, 0, r * 0.23, r * 0.08, r * 0.045); g.fill();
+  } else {
+    const big = mode === 'surprised' ? 1.3 : mode === 'oo' ? 1.12 : 1;
+    const blink = gh.blink > 0 && mode === 'smile';
+    for (const sx of [-1, 1]) {
+      const x = sx * ex + lx, y = ey + ly;
+      if (blink) {
+        g.beginPath(); g.moveTo(x - r * 0.1, y); g.lineTo(x + r * 0.1, y); g.stroke();
+      } else {
+        g.fillStyle = C.ink; ellipse(g, x, y, r * 0.115 * big, r * 0.16 * big); g.fill();
+        g.fillStyle = C.ghost; ellipse(g, x + r * 0.035, y - r * 0.06, r * 0.04 * big, r * 0.045 * big); g.fill();
+      }
+    }
+    g.fillStyle = C.ink;
+    if (mode === 'smile') { g.beginPath(); g.arc(lx * 0.6, r * 0.1, r * 0.14, 0.18 * Math.PI, 0.82 * Math.PI); g.stroke(); }
+    else if (mode === 'oo') { ellipse(g, lx * 0.6, r * 0.22, r * 0.07, r * 0.085); g.fill(); }
+    else { ellipse(g, lx * 0.6, r * 0.25, r * 0.11, r * 0.15); g.fill(); }
+  }
+  g.restore();
+}
+
+/* ---------- drawing: the reward cheese ---------- */
+const BITES = [[1.12, -0.05, 0.36], [0.5, -0.22, 0.38]];
+function drawCheese(g, ch, t) {
+  if (ch.scale <= 0.01) return;
+  const r = ch.rU * U;
+  g.save();
+  g.translate(ch.x, ch.y);
+  const pulse = 1 + Math.sin(t * 3) * 0.06;
+  const halo = g.createRadialGradient(0, r * 0.1, r * 0.3, 0, r * 0.1, r * 2.1 * pulse);
+  halo.addColorStop(0, rgba(C.cheese, 0.45 * ch.scale));
+  halo.addColorStop(1, rgba(C.cheese, 0));
+  g.fillStyle = halo;
+  g.fillRect(-r * 2.4, -r * 2.4, r * 4.8, r * 4.8);
+
+  g.translate(0, r * 0.6);
+  g.scale(ch.scale * (1 + ch.sq), ch.scale * (1 - ch.sq));
+  g.rotate(Math.sin(ch.wobble * 18) * 0.07 * ch.wobble);
+  g.translate(0, -r * 0.6);
+
+  if (ch.bites > 0) {
+    g.beginPath();
+    g.rect(-r * 3, -r * 3, r * 6, r * 6);
+    for (let i = 0; i < Math.min(ch.bites, BITES.length); i++) {
+      const [bx, by, brr] = BITES[i];
+      g.moveTo(bx * r + brr * r, by * r);
+      g.arc(bx * r, by * r, brr * r, 0, TAU);
+    }
+    g.clip('evenodd');
+  }
+  const poly = pts => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x * r, y * r) : g.moveTo(x * r, y * r)); g.closePath(); };
+  g.lineJoin = 'round'; g.lineWidth = r * 0.05; g.strokeStyle = C.cheeseDeep;
+  poly([[0.9, 0.2], [1.25, -0.1], [1.25, 0.3], [0.9, 0.6]]); g.fillStyle = C.cheeseDeep; g.fill(); g.stroke();
+  poly([[-1.1, -0.25], [-0.7, -0.6], [1.25, -0.1], [0.9, 0.2]]); g.fillStyle = C.cheeseLight; g.fill(); g.stroke();
+  poly([[-1.1, -0.25], [0.9, 0.2], [0.9, 0.6], [-1.1, 0.6]]); g.fillStyle = C.cheese; g.fill(); g.stroke();
+  g.fillStyle = C.cheeseDeep;
+  for (const [x, y, rx, ry] of [[-0.62, 0.28, 0.15, 0.13], [0.02, 0.4, 0.1, 0.09], [0.5, 0.43, 0.07, 0.065], [-0.28, 0.1, 0.075, 0.065], [-0.85, 0.47, 0.06, 0.05]]) {
+    ellipse(g, x * r, y * r, rx * r, ry * r); g.fill();
+  }
+  g.globalAlpha = 0.6;
+  for (const [x, y, rx, ry] of [[-0.35, -0.33, 0.13, 0.05], [0.45, -0.12, 0.09, 0.035]]) {
+    ellipse(g, x * r, y * r, rx * r, ry * r); g.fill();
+  }
+  g.restore();
+}
+
+/* ---------- particles ---------- */
+function addP(p) {
+  if (particles.length > 700) return;
+  particles.push(Object.assign({ life: 0, vx: 0, vy: 0, g: 0, drag: 0, rot: 0, vr: 0 }, p));
+}
+function puff(x, y, color, r) {
+  const n = reduceMotion ? 5 : 11;
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, TAU), sp = rnd(8, 24) * U;
+    addP({ type: 'puff', x: x + Math.cos(a) * r * 0.3, y: y + Math.sin(a) * r * 0.3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, drag: 3, max: rnd(0.5, 0.8), size: rnd(0.25, 0.42) * r, color });
+  }
+}
+function sparks(x, y, n, color, speed) {
+  n = reduceMotion ? Math.ceil(n / 2) : n;
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, TAU), sp = rnd(0.4, 1) * (speed || 30) * U;
+    addP({ type: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, drag: 2.2, g: 12 * U, max: rnd(0.6, 1.0), size: rnd(1.1, 2) * U, color: color || C.star, rot: rnd(0, TAU), vr: rnd(-6, 6) });
+  }
+}
+function burst(x, y, color) {
+  const n = reduceMotion ? 16 : 34;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * TAU + rnd(-0.1, 0.1), sp = rnd(22, 34) * U;
+    addP({ type: 'dot', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, drag: 1.6, g: 14 * U, max: rnd(0.9, 1.4), size: rnd(0.5, 0.9) * U, color });
+  }
+  addP({ type: 'puff', x, y, max: 0.25, size: 5 * U, color: C.cream });
+}
+function confetti() {
+  addP({ type: 'confetti', x: rnd(0, W), y: -2 * U, vx: rnd(-6, 6) * U, vy: rnd(14, 24) * U, drag: 0.2, g: 4 * U, max: rnd(2.6, 3.6), size: rnd(1.2, 2) * U, color: pick(PARTY_COLORS), rot: rnd(0, TAU), vr: rnd(-8, 8) });
+}
+function crumbs(x, y) {
+  for (let i = 0; i < 12; i++) {
+    addP({ type: 'crumb', x, y, vx: rnd(-22, 22) * U, vy: rnd(-28, -8) * U, g: 90 * U, max: rnd(0.5, 0.9), size: rnd(0.7, 1.4) * U, color: pick([C.cheese, C.cheeseLight, C.cheeseDeep]), rot: rnd(0, TAU), vr: rnd(-10, 10) });
+  }
+}
+function ripple(x, y) {
+  addP({ type: 'ring', x, y, max: 0.45, size: 9 * U, color: C.cream });
+}
+function trail(x, y, color) {
+  addP({ type: 'trail', x: x + rnd(-2, 2) * U, y: y + rnd(-2, 2) * U, vy: rnd(2, 6) * U, max: rnd(0.4, 0.7), size: rnd(0.7, 1.2) * U, color, rot: rnd(0, TAU) });
+}
+
+function updateParticles(dt) {
+  for (const p of particles) {
+    p.life += dt;
+    if (p.drag) { const k = Math.max(0, 1 - p.drag * dt); p.vx *= k; p.vy *= k; }
+    p.vy += p.g * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rot += p.vr * dt;
+    if (p.type === 'confetti') p.x += Math.sin(p.life * 3 + p.rot) * 8 * U * dt;
+  }
+  particles = particles.filter(p => p.life < p.max);
+}
+
+function drawParticles(g) {
+  for (const p of particles) {
+    const k = p.life / p.max;
+    g.save();
+    switch (p.type) {
+      case 'puff':
+        g.globalAlpha = (1 - k) * 0.85;
+        g.fillStyle = p.color;
+        ellipse(g, p.x, p.y, p.size * (0.6 + k * 1.2), p.size * (0.6 + k * 1.2)); g.fill();
+        break;
+      case 'spark':
+      case 'trail': {
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = (1 - k) * (p.type === 'trail' ? 0.8 : 1);
+        g.fillStyle = p.color;
+        const R = p.size * (1 - k * 0.5);
+        starPath(g, p.x, p.y, R, R * 0.45, p.rot); g.fill();
+        break;
+      }
+      case 'dot':
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = 1 - k;
+        g.fillStyle = p.color;
+        ellipse(g, p.x, p.y, p.size, p.size); g.fill();
+        break;
+      case 'confetti':
+        g.globalAlpha = Math.min(1, (1 - k) * 3);
+        g.fillStyle = p.color;
+        g.translate(p.x, p.y); g.rotate(p.rot);
+        g.fillRect(-p.size / 2, -p.size * 0.3 * Math.abs(Math.cos(p.life * 6)), p.size, p.size * 0.6 * Math.abs(Math.cos(p.life * 6)) + 0.5);
+        break;
+      case 'crumb':
+        g.globalAlpha = 1 - k * k;
+        g.fillStyle = p.color;
+        g.translate(p.x, p.y); g.rotate(p.rot);
+        g.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        break;
+      case 'ring':
+        g.globalAlpha = (1 - k) * 0.7;
+        g.strokeStyle = p.color; g.lineWidth = 0.55 * U;
+        ellipse(g, p.x, p.y, p.size * (0.3 + k), p.size * (0.3 + k)); g.stroke();
+        break;
+    }
+    g.restore();
+  }
+}
+
+/* ---------- timers that pause with the game ---------- */
+function later(sec, fn) { timers.push({ t: sec, fn }); }
+function runTimers(dt) {
+  for (let i = timers.length - 1; i >= 0; i--) {
+    const tm = timers[i];
+    tm.t -= dt;
+    if (tm.t <= 0) { timers.splice(i, 1); tm.fn(); }
+  }
+}
+
+/* ---------- ghosts ---------- */
+const catchable = gh => gh.state === 'float' || (gh.state === 'appear' && gh.scale > 0.5);
+function ghostBounds(r) {
+  const b = {
+    x0: r + 3 * U + inset.left,
+    x1: W - r - 3 * U - inset.right,
+    y0: inset.top + 18 * U + r * 0.5,
+    y1: H * 0.76
+  };
+  if (b.x1 < b.x0) b.x0 = b.x1 = W / 2;
+  if (b.y1 < b.y0) b.y0 = b.y1 = H / 2;
+  return b;
+}
+function spawnGhost(opts) {
+  opts = opts || {};
+  const rU = rnd(7.2, 9);
+  const r = rU * U;
+  const b = ghostBounds(r);
+  let x, y, tries = 0;
+  do {
+    x = rnd(b.x0, b.x1); y = rnd(b.y0, b.y1); tries++;
+  } while (tries < 30 && (Math.hypot(x - mouse.x, y - mouse.y) < 34 * U || ghosts.some(o => Math.hypot(o.x - x, o.y - y) < (o.rU + rU) * U * 1.3)));
+  const used = ghosts.map(o => o.tint);
+  const free = GHOST_TINTS.filter(c => !used.includes(c));
+  if (opts.anchor) { x = opts.anchor[0] * W; y = opts.anchor[1] * H; }
+  ghosts.push({
+    x, y, rU, vx: 0, vy: 0, anchor: opts.anchor || null,
+    heading: rnd(0, TAU),
+    speedU: rnd(8, 12) * (1 + Math.min(state.round, 3) * 0.08),
+    state: opts.instant ? 'float' : 'appear', t: 0,
+    scale: opts.instant ? 1 : 0, alpha: opts.instant ? 1 : 0,
+    rot: 0, bob: rnd(0, 10), arm: rnd(0, 10),
+    tint: pick(free.length ? free : GHOST_TINTS),
+    nervous: 0, blink: 0, blinkT: rnd(1, 4), spin: 1, dead: false
+  });
+  if (!opts.silent) Sound.wooo();
+}
+
+function updateGhost(gh, dt) {
+  const r = gh.rU * U;
+  gh.t += dt;
+  gh.blinkT -= dt;
+  if (gh.blinkT <= 0) { gh.blink = 0.14; gh.blinkT = rnd(2, 5); }
+  gh.blink = Math.max(0, gh.blink - dt);
+
+  if (gh.state === 'appear' || gh.state === 'float') {
+    if (gh.state === 'appear') {
+      const k = Math.min(1, gh.t / 0.7);
+      gh.scale = easeOutBack(k);
+      gh.alpha = Math.min(1, k * 1.6);
+      if (k >= 1) { gh.state = 'float'; gh.t = 0; gh.scale = 1; }
+    }
+    if (state.mode === 'title' && gh.anchor) {
+      // on the title screen, bob gently beside the title instead of wandering behind it
+      const tx = gh.anchor[0] * W + Math.sin(state.time * 0.5 + gh.bob) * 3 * U;
+      const ty = gh.anchor[1] * H + Math.cos(state.time * 0.4 + gh.bob) * 2 * U;
+      gh.vx += ((tx - gh.x) * 2 - gh.vx) * Math.min(1, 2.2 * dt);
+      gh.vy += ((ty - gh.y) * 2 - gh.vy) * Math.min(1, 2.2 * dt);
+      gh.x += gh.vx * dt;
+      gh.y += gh.vy * dt;
+      return;
+    }
+    gh.heading += rnd(-1, 1) * 1.6 * dt;
+    const b = ghostBounds(r);
+    if (gh.x < b.x0 || gh.x > b.x1 || gh.y < b.y0 || gh.y > b.y1) {
+      gh.heading = turnToward(gh.heading, Math.atan2((b.y0 + b.y1) / 2 - gh.y, (b.x0 + b.x1) / 2 - gh.x), 2.5 * dt);
+    }
+    const sp = gh.speedU * U;
+    let dvx = Math.cos(gh.heading) * sp, dvy = Math.sin(gh.heading) * sp * 0.75;
+
+    // a gentle "eek!" drift away from Pip — always much slower than Pip
+    let nerv = 0;
+    if (state.mode === 'play') {
+      const dx = gh.x - mouse.x, dy = gh.y - mouse.y, d = Math.hypot(dx, dy) || 1, R = 34 * U;
+      if (d < R) { const f = 1 - d / R; nerv = f; dvx += dx / d * 20 * U * f; dvy += dy / d * 20 * U * f; }
+    }
+    gh.nervous += (Math.min(1, nerv * 2) - gh.nervous) * Math.min(1, 6 * dt);
+
+    if (gh.x < b.x0) dvx += (b.x0 - gh.x) * 4;
+    if (gh.x > b.x1) dvx -= (gh.x - b.x1) * 4;
+    if (gh.y < b.y0) dvy += (b.y0 - gh.y) * 4;
+    if (gh.y > b.y1) dvy -= (gh.y - b.y1) * 4;
+
+    for (const o of ghosts) {
+      if (o === gh || !(o.state === 'float' || o.state === 'appear')) continue;
+      const dx = gh.x - o.x, dy = gh.y - o.y, d = Math.hypot(dx, dy) || 1, min = (gh.rU + o.rU) * U * 1.15;
+      if (d < min) { dvx += dx / d * (min - d) * 3; dvy += dy / d * (min - d) * 3; }
+    }
+    const k = Math.min(1, 2.2 * dt);
+    gh.vx += (dvx - gh.vx) * k;
+    gh.vy += (dvy - gh.vy) * k;
+    gh.x += gh.vx * dt;
+    gh.y += gh.vy * dt;
+    gh.rot += (clamp(gh.vx / (40 * U), -1, 1) * 0.22 - gh.rot) * Math.min(1, 4 * dt);
+  } else if (gh.state === 'scared') {
+    gh.scale = 1 + gh.t * 0.3;
+    if (gh.t >= 0.4) {
+      gh.state = 'away'; gh.t = 0;
+      const side = gh.x < W / 2 ? -1 : 1;
+      gh.vx = side * rnd(25, 40) * U;
+      gh.vy = -rnd(35, 50) * U;
+      gh.spin = side;
+      Sound.giggle();
+    }
+  } else if (gh.state === 'away') {
+    gh.vy -= 60 * U * dt;
+    gh.vx *= 1 + dt * 0.8;
+    gh.x += gh.vx * dt;
+    gh.y += gh.vy * dt;
+    gh.rot += gh.spin * dt * 2.5;
+    gh.scale = Math.max(0.25, gh.scale - dt * 0.35);
+    gh.alpha = Math.max(0, 1 - gh.t / 1.6);
+    if (Math.random() < dt * 30) trail(gh.x, gh.y + r * 0.5, pick([C.star, gh.tint, C.cream]));
+    if (gh.alpha <= 0 || gh.y < -r * 3 || gh.x < -r * 3 || gh.x > W + r * 3) gh.dead = true;
+  }
+}
+
+function catchGhost(gh) {
+  const r = gh.rU * U;
+  gh.state = 'scared'; gh.t = 0;
+  if (mouse.lock === gh) mouse.lock = null;
+  state.caught++;
+  const idx = state.caught - 1;
+  Sound.poof();
+  Sound.squeak(0.05);
+  puff(gh.x, gh.y + r * 0.2, gh.tint, r);
+  sparks(gh.x, gh.y, 10);
+  mouse.hopT = 0;
+  later(0.25, () => launchStar(gh.x, gh.y, idx));
+}
+
+/* ---------- stars ---------- */
+function slotPos(i) {
+  const gap = 10.5 * U;
+  return { x: W / 2 - gap * (STARS_PER_ROUND - 1) / 2 + i * gap, y: inset.top + 7.5 * U };
+}
+function launchStar(x, y, idx) {
+  flyers.push({ x0: x, y0: y, x, y, idx, t: 0, dur: 0.9, rot: 0 });
+  Sound.whoosh();
+}
+function updateFlyers(dt) {
+  for (const f of flyers) {
+    f.t += dt;
+    const k = easeInOut(Math.min(1, f.t / f.dur));
+    const tgt = slotPos(f.idx);
+    const cx = f.x0 + (tgt.x - f.x0) * 0.2, cy = Math.min(f.y0, tgt.y) - 12 * U;
+    const a = (1 - k) * (1 - k), b = 2 * (1 - k) * k, c = k * k;
+    f.x = a * f.x0 + b * cx + c * tgt.x;
+    f.y = a * f.y0 + b * cy + c * tgt.y;
+    f.rot += dt * 8;
+    if (Math.random() < dt * 40) trail(f.x, f.y, C.star);
+    if (f.t >= f.dur) {
+      f.done = true;
+      const sl = slots[f.idx];
+      sl.filled = true; sl.pop = 1;
+      Sound.ding(f.idx);
+      sparks(tgt.x, tgt.y, 8, C.star, 22);
+      state.filled++;
+      if (state.filled >= STARS_PER_ROUND) later(0.5, startParty);
+    }
+  }
+  flyers = flyers.filter(f => !f.done);
+}
+
+/* ---------- the cheese party ---------- */
+function startParty() {
+  if (state.mode !== 'play') return;
+  state.mode = 'party';
+  party = { t: 0, nextBurst: 0, cheese: null, endAt: null };
+  mouse.lock = null; mouse.lockCheese = false;
+  for (const gh of ghosts) if (catchable(gh)) { gh.state = 'scared'; gh.t = 0.3; }
+  Sound.fanfare();
+  mouse.hopT = 0;
+  later(0.6, () => { mouse.hopT = 0; });
+}
+function updateParty(dt) {
+  const p = party;
+  p.t += dt;
+  if (p.t < 3 && p.t >= p.nextBurst) {
+    p.nextBurst = p.t + rnd(0.28, 0.45);
+    burst(rnd(W * 0.15, W * 0.85), rnd(inset.top + H * 0.14, H * 0.5), pick(PARTY_COLORS));
+    Sound.pop();
+  }
+  if (p.t < 2.4 && !reduceMotion && Math.random() < dt * 70) confetti();
+  if (!p.cheese && p.t > 1.2) {
+    p.cheese = { x: W / 2, y: -15 * U, vy: 0, rU: 12, landed: false, bounces: 0, bites: 0, sq: 0, sqV: 0, wobble: 0, cool: 0, gone: false, scale: 1 };
+    Sound.falling();
+  }
+  const ch = p.cheese;
+  if (ch) {
+    const floorY = nearHillY(ch.x) - ch.rU * U * 0.6 + 1.5 * U;
+    if (!ch.landed) {
+      ch.vy += 300 * U * dt;
+      ch.y += ch.vy * dt;
+      if (ch.y >= floorY) {
+        ch.y = floorY;
+        ch.bounces++;
+        ch.sq = clamp(ch.vy / (300 * U), 0.06, 0.3);
+        ch.sqV = 0;
+        Sound.boing(ch.bounces);
+        ch.vy = -ch.vy * 0.42;
+        if (ch.bounces >= 3 || Math.abs(ch.vy) < 25 * U) { ch.vy = 0; ch.landed = true; }
+      }
+    } else {
+      ch.y = floorY;
+      ch.x = clamp(ch.x, ch.rU * U * 1.3, W - ch.rU * U * 1.3);
+    }
+    ch.sqV += (-ch.sq * 220 - ch.sqV * 14) * dt;
+    ch.sq += ch.sqV * dt;
+    ch.wobble = Math.max(0, ch.wobble - dt * 1.5);
+    ch.cool -= dt;
+    if (ch.gone) {
+      ch.scale = Math.max(0, ch.scale - dt * 4);
+    } else if (ch.landed && ch.cool <= 0) {
+      const ms = mouseS(), r = ch.rU * U;
+      const headX = mouse.x + Math.sign(mouse.faceK || 1) * ms * 1.1, headY = mouse.y - ms * 0.35;
+      if (Math.hypot(mouse.x - ch.x, mouse.y - ch.y) < r * 1.1 + ms * 0.6 || Math.hypot(headX - ch.x, headY - ch.y) < r * 1.1) bite(ch);
+    }
+  }
+  if (p.endAt !== null && p.t >= p.endAt) endParty();
+}
+function bite(ch) {
+  const r = ch.rU * U;
+  ch.bites++;
+  ch.cool = 0.7;
+  ch.wobble = 1;
+  mouse.munch = 0.6;
+  if (Math.abs(ch.x - mouse.x) > U) mouse.face = Math.sign(ch.x - mouse.x);
+  Sound.nom();
+  const spot = BITES[Math.min(ch.bites, BITES.length) - 1];
+  crumbs(ch.x + spot[0] * r, ch.y + spot[1] * r);
+  if (ch.bites > BITES.length) {
+    ch.gone = true;
+    Sound.yum();
+    sparks(ch.x, ch.y, 16, C.star, 34);
+    crumbs(ch.x, ch.y);
+    mouse.hopT = 0;
+    mouse.lockCheese = false;
+    later(0.55, () => { mouse.hopT = 0; Sound.squeak(); });
+    party.endAt = party.t + 1.8;
+  }
+}
+function endParty() {
+  state.round++;
+  state.caught = 0;
+  state.filled = 0;
+  slots.forEach((sl, i) => later(i * 0.08, () => { sl.filled = false; sl.pop = 0.6; }));
+  party = null;
+  state.mode = 'play';
+  state.spawnTimer = 0.6;
+  state.idle = 0;
+}
+
+/* ---------- Pip ---------- */
+function mouseBounds() {
+  return {
+    x0: 8 * U + inset.left, x1: W - 8 * U - inset.right,
+    y0: inset.top + 12 * U, y1: H - 7 * U - inset.bottom
+  };
+}
+function updateMouse(dt) {
+  if (state.mode === 'title') { mouse.tx = world.homeX; mouse.ty = world.homeY; }
+  if (mouse.lock) {
+    if (mouse.lock.dead || !catchable(mouse.lock)) mouse.lock = null;
+    else { mouse.tx = mouse.lock.x; mouse.ty = mouse.lock.y + mouse.lock.rU * U * 0.2; }
+  }
+  if (mouse.lockCheese) {
+    const ch = party && party.cheese;
+    if (ch && ch.landed && !ch.gone) { mouse.tx = ch.x; mouse.ty = ch.y; }
+    else if (!ch || ch.gone) mouse.lockCheese = false;
+  }
+  const b = mouseBounds();
+  mouse.tx = clamp(mouse.tx, b.x0, b.x1);
+  mouse.ty = clamp(mouse.ty, b.y0, b.y1);
+
+  const dx = mouse.tx - mouse.x, dy = mouse.ty - mouse.y, d = Math.hypot(dx, dy);
+  const maxS = 115 * U;
+  let dvx = 0, dvy = 0;
+  if (d > 0.8 * U) { const sp = Math.min(maxS, d * 6); dvx = dx / d * sp; dvy = dy / d * sp; }
+  const k = Math.min(1, 12 * dt);
+  mouse.vx += (dvx - mouse.vx) * k;
+  mouse.vy += (dvy - mouse.vy) * k;
+  mouse.x = clamp(mouse.x + mouse.vx * dt, b.x0, b.x1);
+  mouse.y = clamp(mouse.y + mouse.vy * dt, b.y0, b.y1);
+
+  const speed = Math.hypot(mouse.vx, mouse.vy);
+  if (Math.abs(mouse.vx) > 6 * U) mouse.face = Math.sign(mouse.vx);
+  mouse.faceK += (mouse.face - mouse.faceK) * Math.min(1, 14 * dt);
+  mouse.run += (Math.min(1, speed / (30 * U)) - mouse.run) * Math.min(1, 10 * dt);
+  if (mouse.run > 0.05) mouse.phase += dt * (8 + speed / U * 0.12);
+
+  mouse.blinkT -= dt;
+  if (mouse.blinkT <= 0) { mouse.blink = 0.15; mouse.blinkT = rnd(2, 5); }
+  mouse.blink = Math.max(0, mouse.blink - dt);
+  mouse.munch = Math.max(0, mouse.munch - dt);
+  if (mouse.hopT < 1) mouse.hopT = Math.min(1, mouse.hopT + dt / 0.5);
+}
+function mouseView() {
+  const s = mouseS();
+  const hk = mouse.hopT;
+  const jump = hk < 1 ? -Math.sin(Math.PI * hk) * 7 * U : 0;
+  const sq = (hk < 1 ? -Math.sin(Math.PI * hk) * 0.12 : 0) + Math.sin(state.time * 3) * 0.015;
+  const tilt = clamp(mouse.vy / (115 * U), -1, 1) * 0.35 * (mouse.faceK >= 0 ? 1 : -1);
+  return { x: mouse.x, y: mouse.y + jump, s, face: mouse.faceK, run: mouse.run, phase: mouse.phase, blink: mouse.blink, munch: mouse.munch, t: state.time, tilt, sq };
+}
+
+/* ---------- hints for little players who get stuck ---------- */
+function hintTarget() {
+  if (state.mode === 'play' && state.idle > 5) {
+    let best = null, bd = Infinity;
+    for (const gh of ghosts) {
+      if (!catchable(gh)) continue;
+      const d = Math.hypot(gh.x - mouse.x, gh.y - mouse.y);
+      if (d < bd) { bd = d; best = gh; }
+    }
+    if (best) return { x: best.x, y: best.y + best.rU * U * 0.2, r: best.rU * U * 1.25, ghost: best };
+  }
+  if (state.mode === 'party' && party.cheese && party.cheese.landed && !party.cheese.gone && state.idle > 3) {
+    const ch = party.cheese;
+    return { x: ch.x, y: ch.y, r: ch.rU * U * 1.4 };
+  }
+  return null;
+}
+function drawHint(g, h) {
+  const t = state.time;
+  g.save();
+  g.strokeStyle = C.cream;
+  g.lineWidth = 0.6 * U;
+  for (let i = 0; i < 2; i++) {
+    const k = (t * 0.9 + i * 0.5) % 1;
+    g.globalAlpha = (1 - k) * 0.6;
+    ellipse(g, h.x, h.y, h.r * (1 + k * 0.6), h.r * (1 + k * 0.6)); g.stroke();
+  }
+  g.globalAlpha = 1;
+  const below = h.y + h.r + 12 * U < H;
+  const tap = Math.abs(Math.sin(t * 4)) * 2.2 * U;
+  g.font = `${Math.round(9 * U)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+  g.textAlign = 'center';
+  g.textBaseline = below ? 'top' : 'bottom';
+  g.fillStyle = C.cream;
+  g.fillText(below ? '👆' : '👇', h.x + h.r * 0.25, below ? h.y + h.r * 0.75 + tap : h.y - h.r * 0.75 - tap);
+  g.restore();
+}
+
+/* ---------- HUD: the five star slots ---------- */
+function drawHUD(g) {
+  for (let i = 0; i < STARS_PER_ROUND; i++) {
+    const p = slotPos(i), sl = slots[i];
+    let y = p.y;
+    if (state.mode === 'party') y += Math.sin(state.time * 7 - i * 0.8) * 1.2 * U;
+    const R = 3.8 * U * (1 + sl.pop * 0.5);
+    g.save();
+    g.lineJoin = 'round';
+    if (sl.filled) {
+      const glow = g.createRadialGradient(p.x, y, R * 0.3, p.x, y, R * 2);
+      glow.addColorStop(0, rgba(C.star, 0.55)); glow.addColorStop(1, rgba(C.star, 0));
+      g.fillStyle = glow; g.fillRect(p.x - R * 2, y - R * 2, R * 4, R * 4);
+      g.fillStyle = C.star; g.strokeStyle = C.cheeseDeep; g.lineWidth = 0.5 * U;
+      starPath(g, p.x, y, R, R * 0.5, -Math.PI / 2); g.fill(); g.stroke();
+      g.fillStyle = C.cream; g.globalAlpha = 0.7;
+      ellipse(g, p.x - R * 0.2, y - R * 0.25, R * 0.16, R * 0.1, -0.5); g.fill();
+    } else {
+      g.fillStyle = rgba(C.ink, 0.35); g.strokeStyle = rgba(C.cream, 0.5); g.lineWidth = 0.45 * U;
+      starPath(g, p.x, y, R, R * 0.5, -Math.PI / 2); g.fill(); g.stroke();
+    }
+    g.restore();
+  }
+  for (const f of flyers) {
+    const k = Math.min(1, f.t / f.dur);
+    const R = (2.6 + 1.2 * k) * U;
+    g.save();
+    const glow = g.createRadialGradient(f.x, f.y, R * 0.2, f.x, f.y, R * 2.2);
+    glow.addColorStop(0, rgba(C.star, 0.6)); glow.addColorStop(1, rgba(C.star, 0));
+    g.fillStyle = glow; g.fillRect(f.x - R * 2.2, f.y - R * 2.2, R * 4.4, R * 4.4);
+    g.fillStyle = C.star; g.strokeStyle = C.cheeseDeep; g.lineWidth = 0.4 * U; g.lineJoin = 'round';
+    starPath(g, f.x, f.y, R, R * 0.5, f.rot); g.fill(); g.stroke();
+    g.restore();
+  }
+}
+
+/* ---------- ambient sky ---------- */
+function drawSky(g) {
+  const t = state.time;
+  g.fillStyle = C.cream;
+  for (const s of skyStars) {
+    g.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
+    if (s.big) {
+      starPath(g, s.x, s.y, s.r * 2.6, s.r * 0.7, -Math.PI / 2); g.fill();
+    } else {
+      ellipse(g, s.x, s.y, s.r, s.r); g.fill();
+    }
+  }
+  g.globalAlpha = 1;
+  for (const f of fireflies) {
+    const a = 0.5 + 0.5 * Math.sin(t * 2.2 * f.sp + f.ph);
+    const glow = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, 2.6 * U);
+    glow.addColorStop(0, rgba(C.firefly, 0.55 * a)); glow.addColorStop(1, rgba(C.firefly, 0));
+    g.fillStyle = glow;
+    g.fillRect(f.x - 2.6 * U, f.y - 2.6 * U, 5.2 * U, 5.2 * U);
+    g.globalAlpha = 0.4 + 0.6 * a;
+    g.fillStyle = C.firefly;
+    ellipse(g, f.x, f.y, 0.45 * U, 0.45 * U); g.fill();
+    g.globalAlpha = 1;
+  }
+}
+function updateFireflies(dt) {
+  for (const f of fireflies) {
+    f.a += rnd(-1, 1) * dt * 1.5;
+    f.x += Math.cos(f.a) * 4 * U * f.sp * dt;
+    f.y += Math.sin(f.a) * 3 * U * f.sp * dt;
+    if (f.y < H * 0.5) f.a = turnToward(f.a, Math.PI / 2, dt * 2);
+    if (f.y > H * 0.97) f.a = turnToward(f.a, -Math.PI / 2, dt * 2);
+    if (f.x < -3 * U) f.x = W + 3 * U;
+    if (f.x > W + 3 * U) f.x = -3 * U;
+  }
+}
+
+/* ---------- input ---------- */
+function setTargetFromPoint(x, y, isTap) {
+  let best = null, bd = Infinity;
+  for (const gh of ghosts) {
+    if (!catchable(gh)) continue;
+    const d = Math.hypot(x - gh.x, y - gh.y);
+    if (d < gh.rU * U * 1.8 && d < bd) { best = gh; bd = d; }
+  }
+  mouse.lock = best;
+  mouse.lockCheese = false;
+  if (!best && party && party.cheese && party.cheese.landed && !party.cheese.gone) {
+    const ch = party.cheese;
+    if (Math.hypot(x - ch.x, y - ch.y) < ch.rU * U * 1.7) mouse.lockCheese = true;
+  }
+  mouse.tx = x;
+  mouse.ty = y;
+  if (isTap) ripple(x, y);
+}
+
+canvas.addEventListener('pointerdown', e => {
+  Sound.unlock();
+  if (state.mode === 'title') { startGame(); return; }
+  pointer.id = e.pointerId;
+  pointer.down = true;
+  state.idle = 0;
+  setTargetFromPoint(e.clientX, e.clientY, true);
+  if (state.time - state.lastSqueak > 0.35) { Sound.squeak(); state.lastSqueak = state.time; }
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pointer.down || e.pointerId !== pointer.id || state.mode === 'title') return;
+  state.idle = 0;
+  setTargetFromPoint(e.clientX, e.clientY, false);
+});
+const releasePointer = e => {
+  Sound.unlock();
+  if (e.pointerId === pointer.id) pointer.down = false;
+};
+window.addEventListener('pointerup', releasePointer);
+window.addEventListener('pointercancel', releasePointer);
+
+titleEl.addEventListener('pointerup', () => { Sound.unlock(); startGame(); });
+titleEl.addEventListener('click', () => { Sound.unlock(); startGame(); });
+
+// stop iPad zoom, scroll bounce, long-press menus and double-tap zoom
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+let wakeLock = null;
+async function keepAwake() {
+  try {
+    if ('wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch (e) { wakeLock = null; }
+}
+function tryFullscreen() {
+  const standalone = navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches));
+  if (standalone || document.fullscreenElement || document.webkitFullscreenElement) return;
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return;
+  try {
+    const p = fn.call(el);
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) { /* optional */ }
+}
+
+function startGame() {
+  if (state.mode !== 'title') return;
+  state.mode = 'play';
+  state.idle = 0;
+  state.spawnTimer = 0.4;
+  titleEl.classList.add('is-leaving');
+  setTimeout(() => { titleEl.hidden = true; }, 500);
+  Sound.squeak();
+  mouse.hopT = 0;
+  keepAwake();
+  tryFullscreen();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (state.mode !== 'title') keepAwake();
+    if (Sound.ctx && Sound.ctx.state !== 'running') Sound.ctx.resume().catch(() => {});
+  } else if (Sound.ctx) {
+    Sound.ctx.suspend().catch(() => {});
+  }
+});
+
+let resizeQueued = false;
+function queueResize() {
+  if (resizeQueued) return;
+  resizeQueued = true;
+  requestAnimationFrame(() => { resizeQueued = false; resize(); });
+}
+window.addEventListener('resize', queueResize);
+window.addEventListener('orientationchange', () => { queueResize(); setTimeout(queueResize, 300); });
+
+/* ---------- main loop ---------- */
+function update(dt) {
+  state.time += dt;
+  state.idle += dt;
+  runTimers(dt);
+
+  const live = ghosts.filter(gh => gh.state === 'appear' || gh.state === 'float').length;
+  if (state.mode === 'title') {
+    if (live < 2) spawnGhost({ silent: true, anchor: live ? [0.86, 0.62] : [0.14, 0.38] });
+  } else if (state.mode === 'play') {
+    const maxG = state.round === 0 ? 2 : 3;
+    if (live < maxG && state.caught + live < STARS_PER_ROUND) {
+      state.spawnTimer -= dt;
+      if (state.spawnTimer <= 0) { spawnGhost(); state.spawnTimer = rnd(0.9, 1.8); }
+    }
+  }
+
+  updateMouse(dt);
+  for (const gh of ghosts) updateGhost(gh, dt);
+  ghosts = ghosts.filter(gh => !gh.dead);
+
+  if (state.mode === 'play') {
+    const s = mouseS();
+    const headX = mouse.x + Math.sign(mouse.faceK || 1) * s * 1.1, headY = mouse.y - s * 0.35;
+    for (const gh of ghosts) {
+      if (!catchable(gh)) continue;
+      const reach = gh.rU * U * 0.95 + s * 0.6;
+      const gy = gh.y + gh.rU * U * 0.15;
+      if (Math.hypot(gh.x - mouse.x, gy - mouse.y) < reach || Math.hypot(gh.x - headX, gy - headY) < reach * 0.9) catchGhost(gh);
+    }
+  }
+  if (state.mode === 'party' && party) updateParty(dt);
+
+  // hinted ghosts give a little "wooo" now and then
+  const h = hintTarget();
+  if (h && h.ghost) {
+    state.hintWoo -= dt;
+    if (state.hintWoo <= 0) { Sound.wooo(); state.hintWoo = 5; }
+  } else {
+    state.hintWoo = 1.5;
+  }
+
+  updateFlyers(dt);
+  updateParticles(dt);
+  updateFireflies(dt);
+  for (const sl of slots) sl.pop = Math.max(0, sl.pop - dt * 2.5);
+}
+
+function render() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(bg, 0, 0);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawSky(ctx);
+  if (party && party.cheese) drawCheese(ctx, party.cheese, state.time);
+  for (const gh of ghosts) drawGhost(ctx, gh, state.time, mouse);
+
+  const mv = mouseView();
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = C.ink;
+  const lift = mouse.y - mv.y;
+  ellipse(ctx, mouse.x, mouse.y + mv.s * 0.92, mv.s * 1.1 * (1 - lift / (20 * U)), mv.s * 0.2); ctx.fill();
+  ctx.restore();
+  drawMouse(ctx, mv);
+
+  drawParticles(ctx);
+  drawHUD(ctx);
+  const h = hintTarget();
+  if (h) drawHint(ctx, h);
+}
+
+let last = performance.now();
+function frame(now) {
+  let dt = (now - last) / 1000;
+  last = now;
+  if (!(dt > 0)) dt = 0;
+  if (dt > 0.05) dt = 0.05;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+resize();
+spawnGhost({ silent: true, instant: true, anchor: [0.14, 0.38] });
+spawnGhost({ silent: true, instant: true, anchor: [0.86, 0.62] });
+render();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
