@@ -217,7 +217,7 @@ body {
     </button>
   </div>
   <div class="title__notes">
-    <p>For grown-ups: tap or drag to steer Pip. Shoo away five ghosts to earn a cheese party.</p>
+    <p>For grown-ups: turn the sound up, then tap or drag to steer Pip. Shoo away five ghosts to earn a cheese party.</p>
     <p data-repo-only>On iPad, tap Share and then Add to Home Screen for full-screen play.</p>
   </div>
 </div>
@@ -300,31 +300,91 @@ function archPath(g, x, top, w, bottom) {
 
 /* ---------- sound: everything is synthesized, nothing to download ---------- */
 const NOTE = { G5: 783.99, C6: 1046.5, D6: 1174.66, E6: 1318.51, G6: 1567.98, A6: 1760, C7: 2093 };
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
+// A quarter second of silence as a WAV file, built in code so there is nothing to download.
+function silentWavUrl() {
+  const n = 2000, rate = 8000;
+  const buf = new Uint8Array(44 + n);
+  const dv = new DataView(buf.buffer);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) buf[o + i] = s.charCodeAt(i); };
+  str(0, 'RIFF'); dv.setUint32(4, 36 + n, true); str(8, 'WAVE'); str(12, 'fmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, rate, true); dv.setUint32(28, rate, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+  str(36, 'data'); dv.setUint32(40, n, true);
+  buf.fill(128, 44);
+  let bin = '';
+  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+  return 'data:audio/wav;base64,' + btoa(bin);
+}
+
 const Sound = {
-  ctx: null, master: null, noiseBuf: null,
+  ctx: null, master: null, noiseBuf: null, primed: false, media: null, mediaTries: 0,
+  build() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    // a gentle limiter so overlapping sounds can be loud without distorting
+    const comp = this.ctx.createDynamicsCompressor();
+    comp.threshold.value = -10;
+    comp.knee.value = 8;
+    comp.ratio.value = 6;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.2;
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 1.6;
+    this.master.connect(comp);
+    comp.connect(this.ctx.destination);
+    const len = Math.floor(this.ctx.sampleRate * 1.5);
+    this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = this.noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    this.primed = false;
+  },
+  // Called from every tap. iPad only lets a page start sound from inside a tap, and keeps
+  // web sound muted in Silent Mode unless the page asks to play like a video does.
   unlock() {
     try {
-      if (!this.ctx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        this.ctx = new AC();
-        const comp = this.ctx.createDynamicsCompressor();
-        this.master = this.ctx.createGain();
-        this.master.gain.value = 0.8;
-        this.master.connect(comp);
-        comp.connect(this.ctx.destination);
-        const len = Math.floor(this.ctx.sampleRate * 1.5);
-        this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-        const data = this.noiseBuf.getChannelData(0);
-        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
-        // a silent blip wakes up iOS audio
+      if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback';
+    } catch (e) { /* older iPadOS: handled by the silent <audio> fallback below */ }
+    try {
+      if (!this.ctx || this.ctx.state === 'closed') this.build();
+      if (!this.ctx) return;
+      if (this.ctx.state !== 'running') {
+        const p = this.ctx.resume();
+        if (p && p.catch) p.catch(() => {});
+        this.primed = false;
+      }
+      if (!this.primed) {
+        // playing a silent blip inside the tap is what actually wakes iOS audio
         const blip = this.ctx.createBufferSource();
-        blip.buffer = this.ctx.createBuffer(1, 1, 22050);
+        blip.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
         blip.connect(this.ctx.destination);
         blip.start(0);
+        this.primed = this.ctx.state === 'running';
       }
-      if (this.ctx.state !== 'running') this.ctx.resume();
-    } catch (e) { /* no sound is fine */ }
+      this.silentMediaFallback();
+    } catch (e) { /* no sound is better than a crash */ }
+  },
+  // iPadOS before 17 has no audioSession setting. A looping silent <audio> element moves the
+  // page into "playback" audio, which Silent Mode does not mute.
+  silentMediaFallback() {
+    if (navigator.audioSession || !IS_IOS) return;
+    if (this.media) {
+      if (this.media.paused && document.visibilityState === 'visible') this.media.play().catch(() => {});
+      return;
+    }
+    if (this.mediaTries >= 3) return;
+    this.mediaTries++;
+    const a = document.createElement('audio');
+    a.setAttribute('playsinline', '');
+    a.setAttribute('x-webkit-airplay', 'deny');
+    a.loop = true;
+    a.preload = 'auto';
+    a.src = silentWavUrl();
+    this.media = a;
+    const p = a.play();
+    if (p && p.catch) p.catch(() => { if (this.media === a) this.media = null; });
   },
   env(gain, t0, vol, attack, dur) {
     gain.gain.setValueAtTime(0.0001, t0);
@@ -371,8 +431,8 @@ const Sound = {
   },
   squeak(delay = 0) {
     const p = rnd(0.9, 1.15);
-    this.tone({ type: 'triangle', f0: 1400 * p, f1: 2400 * p, dur: 0.09, vol: 0.16, delay });
-    this.tone({ type: 'sine', f0: 1800 * p, f1: 2900 * p, dur: 0.08, vol: 0.12, delay: delay + 0.1 });
+    this.tone({ type: 'triangle', f0: 1400 * p, f1: 2400 * p, dur: 0.1, vol: 0.22, delay });
+    this.tone({ type: 'sine', f0: 1800 * p, f1: 2900 * p, dur: 0.09, vol: 0.17, delay: delay + 0.1 });
   },
   poof() {
     this.noise({ filter: 'lowpass', f0: 2600, f1: 240, dur: 0.42, vol: 0.45, q: 0.7 });
@@ -389,7 +449,7 @@ const Sound = {
     this.tone({ type: 'triangle', f0: f * 3, dur: 0.18, vol: 0.025 });
   },
   wooo() {
-    this.tone({ type: 'sine', path: [[0, 330], [0.35, 520], [0.9, 360]], dur: 0.95, vol: 0.07, attack: 0.25, vib: { rate: 5.5, depth: 14 } });
+    this.tone({ type: 'sine', path: [[0, 330], [0.35, 520], [0.9, 360]], dur: 0.95, vol: 0.11, attack: 0.25, vib: { rate: 5.5, depth: 14 } });
   },
   whoosh() {
     this.noise({ filter: 'bandpass', f0: 300, f1: 2400, q: 0.9, dur: 0.55, vol: 0.1 });
@@ -1394,6 +1454,9 @@ const releasePointer = e => {
 window.addEventListener('pointerup', releasePointer);
 window.addEventListener('pointercancel', releasePointer);
 
+for (const type of ['touchend', 'pointerup', 'click', 'keydown']) {
+  document.addEventListener(type, () => Sound.unlock(), { capture: true, passive: true });
+}
 titleEl.addEventListener('pointerup', () => { Sound.unlock(); startGame(); });
 titleEl.addEventListener('click', () => { Sound.unlock(); startGame(); });
 
@@ -1441,8 +1504,10 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     if (state.mode !== 'title') keepAwake();
     if (Sound.ctx && Sound.ctx.state !== 'running') Sound.ctx.resume().catch(() => {});
-  } else if (Sound.ctx) {
-    Sound.ctx.suspend().catch(() => {});
+    if (Sound.media && Sound.media.paused) Sound.media.play().catch(() => {});
+  } else {
+    if (Sound.ctx) Sound.ctx.suspend().catch(() => {});
+    if (Sound.media) Sound.media.pause();
   }
 });
 

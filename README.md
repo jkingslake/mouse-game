@@ -31,6 +31,10 @@ Touch handling is tuned for iPad: pinch-zoom, double-tap zoom, scroll bounce and
 turned off, and the screen stays awake while playing (on iPadOS 16.4 or later).
 The game works in both landscape and portrait.
 
+**No sound?** Sound starts on the first tap, so tap the play button and turn the volume up.
+On iPadOS 17 and later the game plays even when the iPad is in Silent Mode. On older versions,
+turn off Silent Mode (the bell in Control Center) first.
+
 Tip for grown-ups: turn on **Guided Access** (Settings → Accessibility → Guided Access) to keep a toddler
 inside the game.
 
