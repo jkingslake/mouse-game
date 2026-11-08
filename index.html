@@ -65,6 +65,13 @@
   --saucer: #cfcbe9;
   --saucer-dark: #8f88bf;
   --glass: rgba(205, 238, 255, 0.28);
+  --dino-teal: #4fc9a8;
+  --dino-orange: #ff9a52;
+  --dino-purple: #a98bf5;
+  --dino-blue: #5daeff;
+  --dino-pink: #ff8fb3;
+  --dino-belly: #ffeab8;
+  --egg: #fff4dc;
   --chip: rgba(20, 18, 50, 0.6);
   --chip-line: rgba(255, 247, 230, 0.22);
 
@@ -414,6 +421,7 @@ body {
           <option value="ghost">Ghosts</option>
           <option value="zombie">Zombies</option>
           <option value="alien">Aliens</option>
+          <option value="dino">Dinosaurs</option>
         </select>
         <svg class="chooser__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6 10.5 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </span>
@@ -456,13 +464,15 @@ for (const name of [
   'ghost-sky', 'ghost-lemon', 'blush', 'fur', 'fur-light', 'ear', 'tail', 'ink',
   'star', 'cream', 'wood', 'wood-dark', 'firefly', 'zombie-skin', 'zombie-shade', 'zombie-pants',
   'shirt-lilac', 'shirt-sky', 'shirt-orange', 'shirt-pink', 'shirt-teal', 'dust',
-  'alien-lime', 'alien-pink', 'alien-sky', 'alien-orange', 'alien-violet', 'saucer', 'saucer-dark'
+  'alien-lime', 'alien-pink', 'alien-sky', 'alien-orange', 'alien-violet', 'saucer', 'saucer-dark',
+  'dino-teal', 'dino-orange', 'dino-purple', 'dino-blue', 'dino-pink', 'dino-belly', 'egg'
 ]) {
   C[name.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase())] = rootStyle.getPropertyValue('--' + name).trim();
 }
 const GHOST_TINTS = [C.ghost, C.ghostMint, C.ghostPink, C.ghostSky, C.ghostLemon];
 const SHIRTS = [C.shirtLilac, C.shirtSky, C.shirtOrange, C.shirtPink, C.shirtTeal];
 const ALIEN_SKINS = [C.alienLime, C.alienPink, C.alienSky, C.alienOrange, C.alienViolet];
+const DINO_SKINS = [C.dinoTeal, C.dinoOrange, C.dinoPurple, C.dinoBlue, C.dinoPink];
 const GLASS = rootStyle.getPropertyValue('--glass').trim();
 const PARTY_COLORS = [C.cheese, C.blush, C.ghostMint, C.ghostSky, C.star, C.cream];
 
@@ -699,9 +709,67 @@ const Sound = {
     ['G5', 'C6', 'E6', 'G6', 'C7'].forEach((k, i) => this.tone({ type: 'triangle', f0: NOTE[k], dur: 0.3, vol: 0.13, delay: i * 0.07 }));
     this.tone({ type: 'sine', f0: NOTE.C7, dur: 0.9, vol: 0.06, delay: 0.35 });
   },
+  // dinosaurs: an egg going "tok-tok", a crack, and a tiny "rawr!"
+  eggTok() {
+    [0, 0.14].forEach(d => this.tone({ type: 'sine', f0: 950, f1: 700, dur: 0.06, vol: 0.12, delay: d }));
+  },
+  hatch() {
+    [0, 0.06, 0.13].forEach(d => this.noise({ filter: 'bandpass', f0: 2600, q: 2, dur: 0.05, vol: 0.3, delay: d }));
+    this.rawr(0.18);
+  },
+  rawr(delay = 0) {
+    this.tone({ type: 'triangle', path: [[0, 260], [0.12, 540], [0.4, 300]], dur: 0.45, vol: 0.17, delay, vib: { rate: 35, depth: 30 } });
+    this.noise({ filter: 'bandpass', f0: 900, q: 1.5, dur: 0.35, vol: 0.06, delay });
+  },
+  stompOff() {
+    this.rawr();
+    this.rawr(0.32);
+    [0.3, 0.5, 0.7, 0.9].forEach(d => this.tone({ type: 'sine', f0: 110, f1: 55, dur: 0.12, vol: 0.22, delay: d }));
+  },
+  // the moon's funny noises: slide whistle, boing, raspberry, big yawn, wah-wah-waaah
+  moonNoise(v) {
+    if (v === 0) {
+      this.tone({ type: 'sine', path: [[0, 500], [0.35, 1600], [0.75, 420]], dur: 0.8, vol: 0.17, vib: { rate: 6, depth: 12 } });
+    } else if (v === 1) {
+      this.tone({ type: 'sine', path: [[0, 180], [0.08, 620], [0.8, 220]], dur: 0.85, vol: 0.18, vib: { rate: 11, depth: 90 } });
+    } else if (v === 2) {
+      this.tone({ type: 'sawtooth', f0: 125, f1: 85, dur: 0.7, vol: 0.06, vib: { rate: 32, depth: 30 } });
+      this.noise({ filter: 'bandpass', f0: 420, q: 2.5, dur: 0.7, vol: 0.16 });
+    } else if (v === 3) {
+      this.tone({ type: 'triangle', path: [[0, 300], [0.35, 540], [1.05, 230]], dur: 1.1, vol: 0.15, attack: 0.15, vib: { rate: 5, depth: 18 } });
+    } else {
+      [[0, 392], [0.32, 370], [0.64, 349]].forEach(([d, f]) => this.tone({ type: 'triangle', f0: f, dur: 0.3, vol: 0.15, delay: d, vib: { rate: 5, depth: 6 } }));
+      this.tone({ type: 'triangle', f0: 330, f1: 300, dur: 0.9, vol: 0.15, delay: 0.96, vib: { rate: 6, depth: 14 } });
+    }
+  },
+  // the front door: creak, a rummage inside, ta-da, thud
+  creak(len = 0.5) {
+    this.tone({ type: 'sawtooth', path: [[0, 160], [len * 0.5, 240], [len, 190]], dur: len, vol: 0.05, attack: 0.05, vib: { rate: 38, depth: 25 } });
+    this.noise({ filter: 'bandpass', f0: 1200, f1: 800, q: 3, dur: len, vol: 0.06 });
+  },
+  rummage() {
+    [520, 390, 660, 300].forEach((f, i) => this.tone({ type: 'triangle', f0: f, f1: f * 0.82, dur: 0.08, vol: 0.13, delay: i * 0.12 }));
+    this.noise({ filter: 'bandpass', f0: 900, q: 1, dur: 0.45, vol: 0.06 });
+  },
+  tada(silly) {
+    if (silly) {
+      this.tone({ type: 'sine', path: [[0, 200], [0.1, 700], [0.35, 260]], dur: 0.38, vol: 0.16, vib: { rate: 14, depth: 70 } });
+      this.tone({ type: 'square', f0: 330, f1: 300, dur: 0.18, vol: 0.06, delay: 0.42 });
+      this.tone({ type: 'square', f0: 330, f1: 290, dur: 0.25, vol: 0.06, delay: 0.64 });
+    } else {
+      this.tone({ type: 'triangle', f0: NOTE.C6, dur: 0.3, vol: 0.14 });
+      this.tone({ type: 'triangle', f0: NOTE.G6, dur: 0.45, vol: 0.14, delay: 0.1 });
+      this.tone({ type: 'sine', f0: NOTE.C7, dur: 0.6, vol: 0.07, delay: 0.1 });
+    }
+  },
+  thud() {
+    this.tone({ type: 'sine', f0: 140, f1: 60, dur: 0.15, vol: 0.25 });
+    this.noise({ filter: 'lowpass', f0: 500, dur: 0.1, vol: 0.12 });
+  },
   arrive(kind) {
     if (kind === 'zombie') this.groan();
     else if (kind === 'alien') this.beamIn();
+    else if (kind === 'dino') this.rawr();
     else this.wooo();
   },
   wooo() {
@@ -751,11 +819,14 @@ const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion
 
 let W = 0, H = 0, DPR = 1, U = 1;            // U = 1% of the short side; everything is sized in U
 const inset = { top: 0, right: 0, bottom: 0, left: 0 };
-const world = { doorX: 0, homeX: 0, homeY: 0 };
+const world = { doorX: 0, doorTop: 0, doorBot: 0, doorW: 0, homeX: 0, homeY: 0, moonX: 0, moonY: 0, moonR: 0 };
 let skyStars = [], fireflies = [];
 
 const state = { kind: 'ghost', mode: 'title', time: 0, idle: 0, round: 0, caught: 0, filled: 0, spawnTimer: 0, lastSqueak: -1, hintWoo: 3 };
-const mouse = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, face: 1, faceK: 1, phase: 0, run: 0, hopT: 1, blink: 0, blinkT: 2.5, munch: 0, lock: null, lockCheese: false, placed: false };
+const mouse = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, face: 1, faceK: 1, phase: 0, run: 0, hopT: 1, blink: 0, blinkT: 2.5, munch: 0, lock: null, lockCheese: false, placed: false, inK: 1, hat: null, hatSilly: false };
+// the moon wakes up when Pip visits; the front door opens when Pip goes to it
+const moon = { awake: 0, timer: 0, variant: -1, armed: true, wobble: 0 };
+const door = { open: 0, phase: 'idle', t: 0, armed: true, busy: false };
 let ghosts = [], particles = [], flyers = [], timers = [];
 const slots = Array.from({ length: STARS_PER_ROUND }, () => ({ filled: false, pop: 0 }));
 let party = null;
@@ -818,26 +889,10 @@ function buildBackground() {
   g.fillStyle = sky;
   g.fillRect(0, 0, W, H);
 
-  // the sleepy moon
-  const mr = 9 * U, mx = W - 15 * U - inset.right, my = Math.max(H * 0.2, 22 * U) + inset.top * 0.5;
-  const halo = g.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 3.2);
-  halo.addColorStop(0, rgba(C.moon, 0.33));
-  halo.addColorStop(1, rgba(C.moon, 0));
-  g.fillStyle = halo;
-  g.fillRect(mx - mr * 3.2, my - mr * 3.2, mr * 6.4, mr * 6.4);
-  g.fillStyle = C.moon;
-  ellipse(g, mx, my, mr, mr); g.fill();
-  g.fillStyle = rgba(C.cheeseLight, 0.55);
-  ellipse(g, mx + mr * 0.42, my - mr * 0.45, mr * 0.16, mr * 0.14); g.fill();
-  ellipse(g, mx - mr * 0.55, my + mr * 0.5, mr * 0.11, mr * 0.1); g.fill();
-  g.strokeStyle = C.ink; g.lineCap = 'round'; g.lineWidth = mr * 0.07;
-  for (const sx of [-1, 1]) {
-    g.beginPath(); g.arc(mx + sx * mr * 0.34, my - mr * 0.08, mr * 0.13, 0.12 * Math.PI, 0.88 * Math.PI); g.stroke();
-  }
-  g.beginPath(); g.arc(mx, my + mr * 0.2, mr * 0.22, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
-  g.fillStyle = rgba(C.blush, 0.5);
-  ellipse(g, mx - mr * 0.58, my + mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
-  ellipse(g, mx + mr * 0.58, my + mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
+  // the moon is drawn every frame (it can wake up); just remember where it sits
+  world.moonR = 9 * U;
+  world.moonX = W - 15 * U - inset.right;
+  world.moonY = Math.max(H * 0.2, 22 * U) + inset.top * 0.5;
 
   // far hill
   g.beginPath(); g.moveTo(0, H);
@@ -854,21 +909,14 @@ function buildBackground() {
   hill.addColorStop(1, C.hillNear);
   g.fillStyle = hill; g.fill();
 
-  // Pip's front door, dug into the near hill
+  // Pip's front door, dug into the near hill (the frame lives here; the door itself is drawn
+  // every frame so it can creak open)
   const dx = 13 * U + inset.left;
   const y0 = nearHillY(dx);
   const dw = 8 * U, dTop = y0 + 3 * U, dBot = dTop + 10 * U;
-  world.doorX = dx;
+  world.doorX = dx; world.doorTop = dTop; world.doorBot = dBot; world.doorW = dw;
   g.fillStyle = C.woodDark;
   archPath(g, dx, dTop - 0.9 * U, dw + 1.8 * U, dBot); g.fill();
-  g.fillStyle = C.wood;
-  archPath(g, dx, dTop, dw, dBot); g.fill();
-  g.strokeStyle = rgba(C.woodDark, 0.7); g.lineWidth = 0.35 * U;
-  g.beginPath();
-  for (const off of [-0.25, 0, 0.25]) { g.moveTo(dx + off * dw, dTop + (off === 0 ? 0.3 * U : 1.4 * U)); g.lineTo(dx + off * dw, dBot); }
-  g.stroke();
-  g.fillStyle = C.cheese;
-  ellipse(g, dx + dw * 0.3, dTop + dw * 0.75, 0.7 * U, 0.7 * U); g.fill();
   // round window with a warm light inside
   const wx = dx + dw / 2 + 4.6 * U, wy = dTop + 2.6 * U, wr = 2 * U;
   const glow = g.createRadialGradient(wx, wy, wr * 0.5, wx, wy, wr * 3);
@@ -973,9 +1021,10 @@ function drawMouse(g, m) {
   g.fillStyle = C.ear; ellipse(g, s * 1.0, -s * 1.06, s * 0.28, s * 0.3); g.fill();
 
   // cheek
-  g.fillStyle = C.blush; g.globalAlpha = 0.55;
+  const baseAlpha = g.globalAlpha;
+  g.fillStyle = C.blush; g.globalAlpha = baseAlpha * 0.55;
   ellipse(g, s * 0.96, -s * 0.1, s * (0.17 + munch * 0.07), s * (0.11 + munch * 0.05)); g.fill();
-  g.globalAlpha = 1;
+  g.globalAlpha = baseAlpha;
 
   // eye
   if (m.blink > 0) {
@@ -996,18 +1045,155 @@ function drawMouse(g, m) {
   }
 
   // whiskers
-  g.globalAlpha = 0.55; g.lineWidth = s * 0.03;
+  g.globalAlpha = baseAlpha * 0.55; g.lineWidth = s * 0.03;
   g.beginPath();
   g.moveTo(s * 1.55, -s * 0.26); g.lineTo(s * 2.1, -s * 0.44);
   g.moveTo(s * 1.56, -s * 0.21); g.lineTo(s * 2.16, -s * 0.21);
   g.moveTo(s * 1.55, -s * 0.16); g.lineTo(s * 2.08, -s * 0.0);
   g.stroke();
-  g.globalAlpha = 1;
+  g.globalAlpha = baseAlpha;
 
   // paw and front foot
   g.fillStyle = C.ear;
   ellipse(g, s * 0.64, s * 0.46, s * 0.15, s * 0.12); g.fill();
   ellipse(g, s * 0.42 + stepA * s * 0.22, s * 0.76 - Math.max(0, stepA) * s * 0.14, s * 0.28, s * 0.14); g.fill();
+  if (m.hat) drawHat(g, m.hat, s, t);
+  g.restore();
+}
+
+/* ---------- hats (Pip gets a new one each trip through the front door) ---------- */
+const HATS = ['party', 'top', 'crown', 'beanie', 'chef', 'propeller', 'flower', 'cowboy'];
+const SILLY_HATS = ['duck', 'cheese', 'tower', 'giant', 'pancakes'];
+function pickHat() {
+  const silly = Math.random() < 0.25;
+  const list = (silly ? SILLY_HATS : HATS).filter(h => h !== mouse.hat);
+  mouse.hat = pick(list);
+  mouse.hatSilly = silly;
+  return silly;
+}
+function drawHat(g, hat, s, t) {
+  g.save();
+  g.translate(s * 0.66, -s * 0.92);
+  g.rotate(0.14);
+  hatShape(g, hat, s * 1.2, t);
+  g.restore();
+}
+// Each hat is drawn with its brim at (0, 0), growing upward.
+function hatShape(g, hat, s, t) {
+  g.save();
+  g.lineJoin = 'round';
+  g.lineCap = 'round';
+  g.strokeStyle = rgba(C.ink, 0.3);
+  g.lineWidth = s * 0.04;
+  switch (hat) {
+    case 'party':
+      g.beginPath(); g.moveTo(-s * 0.36, 0); g.lineTo(0, -s * 0.95); g.lineTo(s * 0.36, 0); g.closePath();
+      g.fillStyle = C.shirtSky; g.fill(); g.stroke();
+      g.save(); g.clip();
+      g.fillStyle = C.cheese;
+      for (let i = 0; i < 3; i++) {
+        g.beginPath();
+        g.moveTo(-s, -s * (0.12 + i * 0.3)); g.lineTo(s, -s * (0.32 + i * 0.3));
+        g.lineTo(s, -s * (0.42 + i * 0.3)); g.lineTo(-s, -s * (0.22 + i * 0.3));
+        g.closePath(); g.fill();
+      }
+      g.restore();
+      g.fillStyle = C.blush; ellipse(g, 0, -s * 0.97, s * 0.12, s * 0.12); g.fill();
+      break;
+    case 'top':
+      g.fillStyle = C.ink; rrect(g, -s * 0.3, -s * 0.7, s * 0.6, s * 0.7, s * 0.05); g.fill();
+      g.fillStyle = C.blush; g.fillRect(-s * 0.3, -s * 0.2, s * 0.6, s * 0.12);
+      g.fillStyle = C.ink; ellipse(g, 0, 0, s * 0.5, s * 0.1); g.fill();
+      break;
+    case 'crown':
+      g.beginPath();
+      g.moveTo(-s * 0.36, 0); g.lineTo(-s * 0.4, -s * 0.45); g.lineTo(-s * 0.18, -s * 0.22); g.lineTo(0, -s * 0.55);
+      g.lineTo(s * 0.18, -s * 0.22); g.lineTo(s * 0.4, -s * 0.45); g.lineTo(s * 0.36, 0); g.closePath();
+      g.fillStyle = C.cheese; g.fill(); g.strokeStyle = C.cheeseDeep; g.stroke();
+      g.fillStyle = C.blush; ellipse(g, 0, -s * 0.12, s * 0.07, s * 0.07); g.fill();
+      g.fillStyle = C.shirtSky; ellipse(g, -s * 0.22, -s * 0.1, s * 0.05, s * 0.05); g.fill(); ellipse(g, s * 0.22, -s * 0.1, s * 0.05, s * 0.05); g.fill();
+      g.fillStyle = C.cream;
+      for (const [x, y] of [[-0.4, -0.45], [0, -0.55], [0.4, -0.45]]) { ellipse(g, x * s, y * s, s * 0.05, s * 0.05); g.fill(); }
+      break;
+    case 'beanie':
+      g.fillStyle = C.shirtPink; g.beginPath(); g.ellipse(0, 0, s * 0.42, s * 0.48, 0, Math.PI, TAU); g.closePath(); g.fill();
+      g.fillStyle = C.shirtLilac; rrect(g, -s * 0.44, -s * 0.12, s * 0.88, s * 0.16, s * 0.06); g.fill();
+      g.fillStyle = C.cream; ellipse(g, 0, -s * 0.5, s * 0.13, s * 0.13); g.fill();
+      break;
+    case 'chef':
+      g.fillStyle = C.ghost;
+      for (const [x, y, rr] of [[-0.2, -0.45, 0.22], [0.2, -0.45, 0.22], [0, -0.62, 0.25]]) { ellipse(g, x * s, y * s, rr * s, rr * s); g.fill(); g.stroke(); }
+      rrect(g, -s * 0.3, -s * 0.38, s * 0.6, s * 0.4, s * 0.04); g.fill(); g.stroke();
+      break;
+    case 'propeller': {
+      g.fillStyle = C.shirtOrange; g.beginPath(); g.ellipse(0, 0, s * 0.4, s * 0.42, 0, Math.PI, TAU); g.closePath(); g.fill();
+      g.fillStyle = C.shirtTeal; g.beginPath(); g.moveTo(0, 0); g.ellipse(0, 0, s * 0.4, s * 0.42, 0, Math.PI * 1.33, Math.PI * 1.66); g.closePath(); g.fill();
+      g.strokeStyle = C.ink; g.lineWidth = s * 0.05; g.beginPath(); g.moveTo(0, -s * 0.42); g.lineTo(0, -s * 0.58); g.stroke();
+      const spin = Math.cos(t * 22);
+      g.fillStyle = C.blush; ellipse(g, -s * 0.22 * spin, -s * 0.6, s * 0.22 * Math.abs(spin) + s * 0.02, s * 0.06); g.fill();
+      g.fillStyle = C.cheese; ellipse(g, s * 0.22 * spin, -s * 0.6, s * 0.22 * Math.abs(spin) + s * 0.02, s * 0.06); g.fill();
+      break;
+    }
+    case 'flower':
+      g.strokeStyle = C.grass; g.lineWidth = s * 0.07;
+      g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-s * 0.1, -s * 0.35, s * 0.05, -s * 0.6); g.stroke();
+      g.fillStyle = C.grass; ellipse(g, -s * 0.12, -s * 0.28, s * 0.12, s * 0.06, -0.6); g.fill();
+      g.fillStyle = C.blush;
+      for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t; ellipse(g, s * 0.05 + Math.cos(a) * s * 0.17, -s * 0.66 + Math.sin(a) * s * 0.17, s * 0.12, s * 0.12); g.fill(); }
+      g.fillStyle = C.cheese; ellipse(g, s * 0.05, -s * 0.66, s * 0.1, s * 0.1); g.fill();
+      break;
+    case 'cowboy':
+      g.fillStyle = C.wood;
+      g.beginPath(); g.moveTo(-s * 0.26, -s * 0.05); g.lineTo(-s * 0.3, -s * 0.5); g.quadraticCurveTo(0, -s * 0.36, s * 0.3, -s * 0.5); g.lineTo(s * 0.26, -s * 0.05); g.closePath(); g.fill();
+      g.fillStyle = C.woodDark; g.fillRect(-s * 0.27, -s * 0.17, s * 0.54, s * 0.08);
+      g.fillStyle = C.wood;
+      g.beginPath(); g.moveTo(-s * 0.64, -s * 0.16); g.quadraticCurveTo(0, s * 0.14, s * 0.64, -s * 0.16); g.quadraticCurveTo(0, s * 0.02, -s * 0.64, -s * 0.16); g.fill();
+      break;
+    // ---- the very silly ones ----
+    case 'duck':
+      g.translate(0, Math.sin(t * 5) * s * 0.04);
+      g.fillStyle = C.star;
+      ellipse(g, 0, -s * 0.25, s * 0.42, s * 0.26); g.fill(); g.stroke();
+      ellipse(g, s * 0.25, -s * 0.62, s * 0.22, s * 0.22); g.fill(); g.stroke();
+      g.fillStyle = C.shirtOrange; ellipse(g, s * 0.5, -s * 0.58, s * 0.13, s * 0.06); g.fill();
+      g.fillStyle = C.ink; ellipse(g, s * 0.31, -s * 0.67, s * 0.04, s * 0.05); g.fill();
+      g.fillStyle = C.cheeseDeep; ellipse(g, -s * 0.12, -s * 0.28, s * 0.18, s * 0.1, -0.3); g.fill();
+      break;
+    case 'cheese':
+      g.fillStyle = C.cheese;
+      g.beginPath(); g.moveTo(-s * 0.45, 0); g.lineTo(s * 0.45, 0); g.lineTo(s * 0.45, -s * 0.2); g.lineTo(-s * 0.45, -s * 0.72); g.closePath(); g.fill();
+      g.strokeStyle = C.cheeseDeep; g.stroke();
+      g.fillStyle = C.cheeseDeep;
+      for (const [x, y, rr] of [[-0.25, -0.25, 0.09], [0.12, -0.11, 0.06], [-0.33, -0.5, 0.05]]) { ellipse(g, x * s, y * s, rr * s, rr * s); g.fill(); }
+      break;
+    case 'tower':
+      // a beanie, a top hat and a party hat stacked up, wobbling
+      hatShape(g, 'beanie', s, t);
+      g.translate(0, -s * 0.42); g.rotate(Math.sin(t * 4) * 0.1);
+      hatShape(g, 'top', s * 0.85, t);
+      g.translate(0, -s * 0.62); g.rotate(Math.sin(t * 4 + 1) * 0.14);
+      hatShape(g, 'party', s * 0.75, t);
+      break;
+    case 'giant':
+      // a ridiculously tall top hat
+      g.rotate(Math.sin(t * 3) * 0.08);
+      g.fillStyle = C.ink; rrect(g, -s * 0.28, -s * 2.1, s * 0.56, s * 2.1, s * 0.05); g.fill();
+      g.fillStyle = C.blush; g.fillRect(-s * 0.28, -s * 0.24, s * 0.56, s * 0.12);
+      g.fillStyle = C.star; starPath(g, 0, -s * 1.3, s * 0.16, s * 0.07, -Math.PI / 2); g.fill();
+      g.fillStyle = C.ink; ellipse(g, 0, 0, s * 0.5, s * 0.1); g.fill();
+      break;
+    case 'pancakes':
+      for (let i = 0; i < 4; i++) {
+        const y = -s * (0.08 + i * 0.13), x = Math.sin(i * 2.1) * s * 0.05;
+        g.fillStyle = C.wood; ellipse(g, x, y + s * 0.03, s * 0.46, s * 0.1); g.fill();
+        g.fillStyle = C.cheeseDeep; ellipse(g, x, y, s * 0.46, s * 0.1); g.fill();
+      }
+      g.fillStyle = C.woodDark;
+      ellipse(g, 0, -s * 0.48, s * 0.3, s * 0.07); g.fill();
+      rrect(g, s * 0.2, -s * 0.5, s * 0.07, s * 0.3, s * 0.035); g.fill();
+      g.fillStyle = C.cheeseLight; rrect(g, -s * 0.1, -s * 0.6, s * 0.2, s * 0.1, s * 0.02); g.fill();
+      break;
+  }
   g.restore();
 }
 
@@ -1333,10 +1519,344 @@ function drawAlien(g, a, t, look) {
   g.restore();
 }
 
+/* ---------- drawing: baby dinosaurs (they hatch from eggs) ---------- */
+function drawDino(g, z, t, look) {
+  const r = z.r || z.rU * U;
+  g.save();
+  if (z.state === 'appear' && !z.hatched) {
+    // a speckled egg that wobbles more and more, then cracks
+    const k = Math.min(1, z.t / 0.7);
+    g.fillStyle = C.ink; g.globalAlpha = 0.18;
+    ellipse(g, z.x, z.y + r * 1.36, r * 0.45, r * 0.09); g.fill();
+    g.globalAlpha = 1;
+    g.translate(z.x, z.y + r * 1.35);
+    g.rotate(Math.sin(z.t * 32) * 0.18 * k);
+    g.fillStyle = C.egg;
+    ellipse(g, 0, -r * 0.5, r * 0.4, r * 0.5); g.fill();
+    g.strokeStyle = rgba(C.ink, 0.25); g.lineWidth = r * 0.04; g.stroke();
+    g.fillStyle = z.accent;
+    for (const [x, y, rr] of [[-0.15, -0.7, 0.07], [0.14, -0.45, 0.09], [-0.1, -0.25, 0.06], [0.18, -0.8, 0.05]]) { ellipse(g, x * r, y * r, rr * r, rr * r); g.fill(); }
+    if (k > 0.45) {
+      g.strokeStyle = C.ink; g.lineWidth = r * 0.04;
+      g.beginPath(); g.moveTo(-r * 0.36, -r * 0.55);
+      for (let i = 1; i <= 6; i++) g.lineTo(-r * 0.36 + i * r * 0.12, -r * 0.55 + (i % 2 ? -r * 0.1 : r * 0.04));
+      g.stroke();
+    }
+    g.restore();
+    return;
+  }
+  const happy = z.state === 'away', scared = z.state === 'scared';
+  const face = z.faceK === undefined ? 1 : z.faceK;
+  const moving = happy ? 1 : clamp(Math.hypot(z.vx || 0, z.vy || 0) / (6 * U), 0, 1);
+  const walk = z.walk || 0;
+  const hop = happy ? Math.abs(Math.sin(z.t * 11)) * r * 0.25 : Math.abs(Math.sin(walk)) * r * 0.04 * moving;
+  const shake = scared ? Math.sin(z.t * 70) * r * 0.05 : 0;
+
+  g.fillStyle = C.ink; g.globalAlpha = z.alpha * 0.18;
+  ellipse(g, z.x, z.y + r * 1.36 * z.scale, r * 0.75 * z.scale, r * 0.12 * z.scale); g.fill();
+  g.globalAlpha = z.alpha;
+  g.translate(z.x + shake, z.y - hop);
+  g.rotate(z.rot);
+  g.scale(z.scale * face, z.scale);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  const outline = rgba(C.ink, 0.22);
+  const body = z.tint;
+
+  // swishy tail
+  const sway = Math.sin(t * 3 + z.bob) * r * 0.1 + (happy ? Math.sin(t * 20) * r * 0.1 : 0);
+  g.fillStyle = body;
+  g.beginPath();
+  g.moveTo(-r * 0.4, r * 0.2);
+  g.quadraticCurveTo(-r * 1.0, r * 0.2, -r * 1.38, r * 0.5 + sway);
+  g.quadraticCurveTo(-r * 0.95, r * 0.66, -r * 0.3, r * 0.82);
+  g.closePath(); g.fill();
+  g.strokeStyle = outline; g.lineWidth = r * 0.04; g.stroke();
+
+  // chunky legs with little toes (back leg a shade darker)
+  const swing = Math.sin(walk) * r * 0.12 * moving;
+  for (const [lx, sw, shade] of [[-0.3, -swing, true], [0.1, swing, false]]) {
+    g.fillStyle = body;
+    rrect(g, lx * r + sw, r * 0.72, r * 0.28, r * 0.58, r * 0.1); g.fill();
+    if (shade) { g.fillStyle = rgba(C.ink, 0.18); rrect(g, lx * r + sw, r * 0.72, r * 0.28, r * 0.58, r * 0.1); g.fill(); }
+    g.fillStyle = C.cream;
+    for (let i = 0; i < 3; i++) { ellipse(g, lx * r + sw + r * (0.06 + i * 0.08), r * 1.28, r * 0.04, r * 0.032); g.fill(); }
+  }
+
+  // rounded plates along the back
+  g.fillStyle = z.accent;
+  for (const deg of [196, 222, 248, 274]) {
+    const th = deg * Math.PI / 180;
+    const bx = Math.cos(th) * r * 0.58, by = r * 0.45 + Math.sin(th) * r * 0.46;
+    const nx = Math.cos(th), ny = Math.sin(th), tx = -ny, ty = nx, h = r * 0.32, w = r * 0.13;
+    g.beginPath();
+    g.moveTo(bx - tx * w, by - ty * w);
+    g.quadraticCurveTo(bx + nx * h * 1.2, by + ny * h * 1.2, bx + tx * w, by + ty * w);
+    g.closePath(); g.fill();
+  }
+  // body and tummy
+  g.fillStyle = body; ellipse(g, 0, r * 0.45, r * 0.62, r * 0.5); g.fill();
+  g.strokeStyle = outline; g.stroke();
+  g.fillStyle = C.dinoBelly; ellipse(g, r * 0.16, r * 0.56, r * 0.38, r * 0.3); g.fill();
+
+  // neck, head and snout, with a little crest
+  g.fillStyle = z.accent;
+  g.beginPath(); g.moveTo(r * 0.3, -r * 0.62); g.quadraticCurveTo(r * 0.36, -r * 0.95, r * 0.5, -r * 0.7); g.closePath(); g.fill();
+  g.fillStyle = body;
+  ellipse(g, r * 0.36, r * 0.05, r * 0.26, r * 0.36); g.fill();
+  ellipse(g, r * 0.5, -r * 0.36, r * 0.42, r * 0.36); g.fill(); g.stroke();
+  ellipse(g, r * 0.82, -r * 0.26, r * 0.32, r * 0.23); g.fill(); g.stroke();
+  ellipse(g, r * 0.5, -r * 0.36, r * 0.39, r * 0.33); g.fill();
+  ellipse(g, r * 0.36, r * 0.05, r * 0.23, r * 0.3); g.fill();
+
+  // tiny arm
+  g.save(); g.translate(r * 0.46, r * 0.32); g.rotate(happy ? -1 + Math.sin(t * 16) * 0.5 : 0.5 + Math.sin(t * 3 + z.arm) * 0.15);
+  ellipse(g, r * 0.1, 0, r * 0.14, r * 0.07); g.fill(); g.stroke();
+  g.restore();
+
+  // face
+  let lx = 0, ly = 0;
+  if (look) {
+    lx = clamp((look.x - z.x) / (r * 5), -1, 1) * r * 0.04 * (face < 0 ? -1 : 1);
+    ly = clamp((look.y - z.y) / (r * 5), -1, 1) * r * 0.035;
+  }
+  const mode = scared ? 'surprised' : happy ? 'giggle' : (z.nervous > 0.45 ? 'oo' : 'smile');
+  g.fillStyle = C.blush; g.globalAlpha = z.alpha * 0.55;
+  ellipse(g, r * 0.62, -r * 0.2, r * 0.09, r * 0.055); g.fill();
+  g.globalAlpha = z.alpha;
+  g.fillStyle = C.ink; ellipse(g, r * 1.01, -r * 0.36, r * 0.025, r * 0.02); g.fill();
+  const ex = r * 0.5, ey = -r * 0.46;
+  g.strokeStyle = C.ink; g.lineWidth = r * 0.055;
+  if (mode === 'giggle') {
+    g.beginPath(); g.arc(ex, ey + r * 0.03, r * 0.1, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+    g.fillStyle = C.ink; g.beginPath(); g.arc(r * 0.86, -r * 0.2, r * 0.13, 0, Math.PI); g.closePath(); g.fill();
+    g.fillStyle = C.blush; ellipse(g, r * 0.86, -r * 0.12, r * 0.06, r * 0.035); g.fill();
+  } else {
+    const big = mode === 'surprised' ? 1.3 : mode === 'oo' ? 1.12 : 1;
+    const er = r * 0.13 * big;
+    if (z.blink > 0 && mode === 'smile') {
+      g.beginPath(); g.moveTo(ex - er, ey); g.lineTo(ex + er, ey); g.stroke();
+    } else {
+      g.fillStyle = C.ghost; ellipse(g, ex, ey, er, er * 1.1); g.fill();
+      g.fillStyle = C.ink; ellipse(g, ex + lx + er * 0.15, ey + ly, er * 0.55, er * 0.62); g.fill();
+      g.fillStyle = C.ghost; ellipse(g, ex + lx + er * 0.3, ey + ly - er * 0.25, er * 0.18, er * 0.18); g.fill();
+    }
+    g.fillStyle = C.ink;
+    if (mode === 'smile') {
+      g.lineWidth = r * 0.045;
+      g.beginPath(); g.moveTo(r * 0.66, -r * 0.18); g.quadraticCurveTo(r * 0.88, -r * 0.06, r * 1.06, -r * 0.2); g.stroke();
+      g.fillStyle = C.ghost;
+      for (const tx of [0.8, 0.93]) { g.beginPath(); g.moveTo(r * (tx - 0.035), -r * 0.135); g.lineTo(r * (tx + 0.035), -r * 0.14); g.lineTo(r * tx, -r * 0.08); g.closePath(); g.fill(); }
+    } else if (mode === 'oo') {
+      ellipse(g, r * 0.92, -r * 0.16, r * 0.05, r * 0.06); g.fill();
+    } else {
+      ellipse(g, r * 0.9, -r * 0.15, r * 0.09, r * 0.11); g.fill();
+    }
+  }
+  g.restore();
+}
+
 function drawEnemy(g, gh, t, look) {
   if (gh.kind === 'zombie') drawZombie(g, gh, t, look);
   else if (gh.kind === 'alien') drawAlien(g, gh, t, look);
+  else if (gh.kind === 'dino') drawDino(g, gh, t, look);
   else drawGhost(g, gh, t, look);
+}
+
+/* ---------- drawing: the moon (sleepy, or wide awake and silly) ---------- */
+function drawMoon(g, t) {
+  const mr = world.moonR, mx = world.moonX, my = world.moonY;
+  const a = moon.awake, wob = moon.wobble;
+  const hr = mr * (3.2 + a * 0.6);
+  const halo = g.createRadialGradient(mx, my, mr * 0.8, mx, my, hr);
+  halo.addColorStop(0, rgba(C.moon, 0.33 + a * 0.15));
+  halo.addColorStop(1, rgba(C.moon, 0));
+  g.fillStyle = halo;
+  g.fillRect(mx - hr, my - hr, hr * 2, hr * 2);
+  g.save();
+  g.translate(mx, my);
+  g.rotate(Math.sin(t * 18) * 0.07 * wob);
+  const sc = 1 + Math.sin(t * 24) * 0.05 * wob;
+  g.scale(sc, 2 - sc);
+  g.fillStyle = C.moon; ellipse(g, 0, 0, mr, mr); g.fill();
+  g.fillStyle = rgba(C.cheeseLight, 0.55);
+  ellipse(g, mr * 0.42, -mr * 0.45, mr * 0.16, mr * 0.14); g.fill();
+  ellipse(g, -mr * 0.55, mr * 0.5, mr * 0.11, mr * 0.1); g.fill();
+  g.fillStyle = rgba(C.blush, 0.5);
+  ellipse(g, -mr * 0.58, mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
+  ellipse(g, mr * 0.58, mr * 0.18, mr * 0.15, mr * 0.09); g.fill();
+  g.strokeStyle = C.ink; g.fillStyle = C.ink; g.lineCap = 'round'; g.lineWidth = mr * 0.07;
+  if (a < 0.5) {
+    for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * mr * 0.34, -mr * 0.08, mr * 0.13, 0.12 * Math.PI, 0.88 * Math.PI); g.stroke(); }
+    g.beginPath(); g.arc(0, mr * 0.2, mr * 0.22, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+  } else {
+    // big eyes that look at Pip (or spin round for the boing)
+    const look = Math.atan2(mouse.y - my, mouse.x - mx);
+    for (const sx of [-1, 1]) {
+      const ex = sx * mr * 0.34, ey = -mr * 0.12, er = mr * 0.2;
+      g.fillStyle = C.ghost; ellipse(g, ex, ey, er, er * 1.15); g.fill();
+      g.strokeStyle = C.ink; g.lineWidth = mr * 0.04; g.stroke();
+      const ang = moon.variant === 1 ? t * 9 * sx : look;
+      const px = ex + Math.cos(ang) * er * 0.4, py = ey + Math.sin(ang) * er * 0.45;
+      g.fillStyle = C.ink; ellipse(g, px, py, er * 0.45, er * 0.5); g.fill();
+      g.fillStyle = C.ghost; ellipse(g, px + er * 0.15, py - er * 0.18, er * 0.13, er * 0.13); g.fill();
+    }
+    g.fillStyle = C.ink; g.strokeStyle = C.ink; g.lineWidth = mr * 0.07;
+    const v = moon.variant;
+    if (v === 0) {
+      ellipse(g, 0, mr * 0.38, mr * 0.12, mr * (0.12 + 0.08 * (0.5 + 0.5 * Math.sin(t * 9)))); g.fill();
+    } else if (v === 1) {
+      g.beginPath(); g.arc(0, mr * 0.22, mr * 0.34, 0.08 * Math.PI, 0.92 * Math.PI); g.closePath(); g.fill();
+      g.fillStyle = C.ghost; g.fillRect(-mr * 0.2, mr * 0.25, mr * 0.4, mr * 0.07);
+    } else if (v === 2) {
+      g.beginPath(); g.moveTo(-mr * 0.28, mr * 0.33); g.quadraticCurveTo(0, mr * 0.4, mr * 0.28, mr * 0.33); g.stroke();
+      const wag = Math.sin(t * 30) * mr * 0.04;
+      g.fillStyle = C.blush; ellipse(g, wag, mr * 0.48, mr * 0.14, mr * 0.17); g.fill();
+      g.strokeStyle = rgba(C.ink, 0.4); g.lineWidth = mr * 0.025;
+      g.beginPath(); g.moveTo(wag, mr * 0.38); g.lineTo(wag, mr * 0.56); g.stroke();
+    } else if (v === 3) {
+      ellipse(g, 0, mr * 0.4, mr * 0.2, mr * 0.26); g.fill();
+      g.fillStyle = C.blush; ellipse(g, 0, mr * 0.55, mr * 0.12, mr * 0.07); g.fill();
+    } else {
+      g.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const x = -mr * 0.3 + i * mr * 0.05;
+        const y = mr * 0.44 + Math.sin(i * 1.3 + t * 18) * mr * 0.035 - Math.sin(i / 12 * Math.PI) * mr * 0.1;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+function updateMoon(dt) {
+  moon.timer = Math.max(0, moon.timer - dt);
+  const target = moon.timer > 0 ? 1 : 0;
+  moon.awake += (target - moon.awake) * Math.min(1, (target ? 14 : 5) * dt);
+  moon.wobble = Math.max(0, moon.wobble - dt * 0.7);
+  if (state.mode === 'title' || door.busy) return;
+  // while the moon is awake and Pip has stopped beside it, Pip looks up at it
+  if (moon.timer > 0 && Math.hypot(mouse.vx, mouse.vy) < 10 * U) mouse.face = Math.sign(world.moonX - mouse.x) || 1;
+  const d = Math.hypot(mouse.x - world.moonX, mouse.y - world.moonY);
+  if (!moon.armed) {
+    // Pip has to wander off (and the moon nod off again) before it can be woken a second time
+    if (d > world.moonR + mouseS() * 2.2 && moon.timer <= 0) moon.armed = true;
+    return;
+  }
+  if (d < world.moonR + mouseS() * 0.7) {
+    moon.armed = false;
+    let v;
+    do { v = Math.floor(Math.random() * 5); } while (v === moon.variant);
+    moon.variant = v;
+    moon.timer = v >= 3 ? 2.6 : 2.1;
+    moon.wobble = 1;
+    Sound.moonNoise(v);
+    sparks(world.moonX, world.moonY, 10, C.moon, 28);
+    mouse.hopT = 0;
+    // Pip hops to the moon's side and looks at it, so its silly face can be seen
+    const side = world.moonX - world.moonR - mouseS() * 1.5 > 8 * U ? -1 : 1;
+    mouse.lock = null; mouse.lockCheese = false;
+    mouse.tx = world.moonX + side * (world.moonR + mouseS() * 1.5);
+    mouse.ty = world.moonY + world.moonR * 0.45;
+    pointer.down = false;
+  }
+}
+
+/* ---------- Pip's front door: in he goes, out he comes in a new hat ---------- */
+function drawDoor(g) {
+  const dx = world.doorX, top = world.doorTop, bot = world.doorBot, dw = world.doorW;
+  const open = door.open;
+  g.fillStyle = C.ink;
+  archPath(g, dx, top, dw, bot); g.fill();
+  if (open > 0.01) {
+    const glow = g.createRadialGradient(dx, bot - dw * 0.3, dw * 0.1, dx, bot - dw * 0.3, dw);
+    glow.addColorStop(0, rgba(C.cheese, 0.75 * open));
+    glow.addColorStop(1, rgba(C.cheese, 0.1 * open));
+    g.fillStyle = glow;
+    archPath(g, dx, top, dw, bot); g.fill();
+  }
+  // the door swings open on its left hinge
+  const hinge = dx - dw / 2;
+  g.save();
+  g.translate(hinge, 0);
+  g.scale(1 - open * 0.82, 1);
+  g.translate(-hinge, 0);
+  g.fillStyle = C.wood; archPath(g, dx, top, dw, bot); g.fill();
+  g.strokeStyle = rgba(C.woodDark, 0.7); g.lineWidth = 0.35 * U;
+  g.beginPath();
+  for (const off of [-0.25, 0, 0.25]) { g.moveTo(dx + off * dw, top + (off === 0 ? 0.3 * U : 1.4 * U)); g.lineTo(dx + off * dw, bot); }
+  g.stroke();
+  g.fillStyle = C.cheese; ellipse(g, dx + dw * 0.3, top + dw * 0.75, 0.7 * U, 0.7 * U); g.fill();
+  if (open > 0) { g.fillStyle = rgba(C.ink, 0.35 * open); archPath(g, dx, top, dw, bot); g.fill(); }
+  g.restore();
+}
+function updateDoor(dt) {
+  const s = mouseS();
+  const cx = world.doorX, cy = world.doorBot - s * 0.75;   // where Pip stands in the doorway
+  door.t += dt;
+  switch (door.phase) {
+    case 'idle': {
+      door.open = Math.max(0, door.open - dt * 3);
+      if (state.mode === 'title') return;
+      const d = Math.hypot(mouse.x - cx, mouse.y - cy);
+      if (!door.armed) { if (d > 12 * U) door.armed = true; return; }
+      // open as Pip runs up to the door (he was sent there), or if he wanders right onto it
+      const headingIn = Math.hypot(mouse.tx - cx, mouse.ty - cy) < 9 * U && d < world.doorW / 2 + s * 1.6;
+      if ((headingIn || d < 7 * U) && mouse.hopT >= 1) {
+        door.waitX = Math.max(mouse.x, cx + world.doorW / 2 + s * 1.1);
+        door.phase = 'opening'; door.t = 0; door.busy = true; door.armed = false;
+        mouse.lock = null; mouse.lockCheese = false;
+        Sound.creak(0.5);
+      }
+      break;
+    }
+    case 'opening':
+      // wait beside the door, looking at it, while it creaks open
+      door.open = Math.min(1, door.t / 0.4);
+      mouse.tx = door.waitX; mouse.ty = cy;
+      mouse.face = -1;
+      if (door.t >= 0.5) { door.phase = 'entering'; door.t = 0; }
+      break;
+    case 'entering': {
+      const k = Math.min(1, door.t / 0.35);
+      mouse.inK = 1 - k;
+      mouse.tx = cx; mouse.ty = cy;
+      mouse.x += (cx - mouse.x) * Math.min(1, 10 * dt);
+      mouse.y += (cy - mouse.y) * Math.min(1, 10 * dt);
+      if (k >= 1) { door.phase = 'inside'; door.t = 0; Sound.rummage(); }
+      break;
+    }
+    case 'inside':
+      mouse.inK = 0;
+      mouse.x = mouse.tx = cx; mouse.y = mouse.ty = cy; mouse.vx = mouse.vy = 0;
+      if (door.t >= 0.6) {
+        door.phase = 'exiting'; door.t = 0;
+        mouse.face = mouse.faceK = 1;
+        Sound.tada(pickHat());
+      }
+      break;
+    case 'exiting': {
+      const k = Math.min(1, door.t / 0.3);
+      mouse.inK = k;
+      if (door.t > 0.15) { mouse.tx = cx + 13 * U; mouse.ty = nearHillY(cx + 13 * U) - s * 0.35; }
+      if (k >= 1 && door.t > 0.35) {
+        door.phase = 'closing'; door.t = 0; door.busy = false;
+        pointer.down = false;
+        mouse.hopT = 0;
+        sparks(mouse.x + s * 0.66, mouse.y - s * 1.3, mouse.hatSilly ? 18 : 10, C.star, 26);
+        Sound.creak(0.3);
+      }
+      break;
+    }
+    case 'closing':
+      door.open = Math.max(0, 1 - door.t / 0.35);
+      if (door.t >= 0.35) { door.phase = 'idle'; door.t = 0; Sound.thud(); }
+      break;
+  }
+}
+function resetDoor() {
+  door.phase = 'idle'; door.t = 0; door.open = 0; door.busy = false; door.armed = true;
+  mouse.inK = 1;
 }
 
 /* ---------- drawing: the reward cheese ---------- */
@@ -1516,6 +2036,15 @@ function ghostSpeedFactor(round) {
   return 1 + 1.2 * (1 - Math.pow(0.88, round));
 }
 const isZombie = gh => gh.kind === 'zombie';
+const isDino = gh => gh.kind === 'dino';
+// zombies and dinosaurs walk along the hills; ghosts and aliens fly
+const onGround = gh => gh.kind === 'zombie' || gh.kind === 'dino';
+function eggShell(x, y) {
+  for (let i = 0; i < 12; i++) {
+    addP({ type: 'crumb', x: x + rnd(-2, 2) * U, y, vx: rnd(-20, 20) * U, vy: rnd(-30, -10) * U, g: 80 * U, max: rnd(0.5, 0.9), size: rnd(0.9, 1.6) * U, color: pick([C.egg, C.cream, C.dinoBelly]), rot: rnd(0, TAU), vr: rnd(-12, 12) });
+  }
+  addP({ type: 'puff', x, y: y - 2 * U, max: 0.45, size: 4 * U, color: C.egg });
+}
 const isAlien = gh => gh.kind === 'alien';
 
 // How many can be on screen at once: aliens come in crowds.
@@ -1532,7 +2061,7 @@ function ghostBounds(r, kind) {
     y0: inset.top + 18 * U + r * 0.5,
     y1: H * 0.76
   };
-  if (kind === 'zombie') {
+  if (kind === 'zombie' || kind === 'dino') {
     b.x0 = r * 1.1 + 3 * U + inset.left;
     b.x1 = W - r * 1.1 - 3 * U - inset.right;
     b.y0 = Math.max(H * 0.62, inset.top + 30 * U);
@@ -1546,11 +2075,12 @@ function ghostBounds(r, kind) {
 const TITLE_SPOTS = {
   ghost: [[0.14, 0.38], [0.86, 0.62]],
   zombie: [[0.7, 0], [0.9, 0]],
-  alien: [[0.12, 0.3], [0.88, 0.62], [0.2, 0.55], [0.8, 0.4]]
+  alien: [[0.12, 0.3], [0.88, 0.62], [0.2, 0.55], [0.8, 0.4]],
+  dino: [[0.68, 0], [0.9, 0]]
 };
 function anchorPos(gh) {
   const x = gh.anchor[0] * W;
-  return { x, y: isZombie(gh) ? nearHillY(x) - gh.rU * U * 1.3 : gh.anchor[1] * H };
+  return { x, y: onGround(gh) ? nearHillY(x) - gh.rU * U * 1.3 : gh.anchor[1] * H };
 }
 function resetTitleCast() {
   ghosts = [];
@@ -1567,7 +2097,7 @@ function spawnGhost(opts) {
   do {
     x = rnd(b.x0, b.x1); y = rnd(b.y0, b.y1); tries++;
   } while (tries < 30 && (Math.hypot(x - mouse.x, y - mouse.y) < 34 * U || ghosts.some(o => Math.hypot(o.x - x, o.y - y) < (o.rU + rU) * U * 1.3)));
-  const palette = kind === 'zombie' ? SHIRTS : kind === 'alien' ? ALIEN_SKINS : GHOST_TINTS;
+  const palette = kind === 'zombie' ? SHIRTS : kind === 'alien' ? ALIEN_SKINS : kind === 'dino' ? DINO_SKINS : GHOST_TINTS;
   const used = ghosts.map(o => o.tint);
   const free = palette.filter(c => !used.includes(c));
   const face = opts.anchor ? (opts.anchor[0] > 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
@@ -1585,10 +2115,14 @@ function spawnGhost(opts) {
     nervous: 0, blink: 0, blinkT: rnd(1, 4), spin: 1, dead: false
   };
   if (gh.anchor) { const p = anchorPos(gh); gh.x = p.x; gh.y = p.y; }
+  if (kind === 'dino') {
+    gh.accent = pick(DINO_SKINS.filter(c => c !== gh.tint));
+    gh.hatched = !!opts.instant;
+  }
   ghosts.push(gh);
   if (kind === 'zombie' && !opts.instant) dirt(gh.x, gh.y + r * 1.3);
   if (kind === 'alien' && !opts.instant) { ripple(gh.x, gh.y); sparks(gh.x, gh.y, 5, gh.tint, 18); }
-  if (!opts.silent) Sound.arrive(kind);
+  if (!opts.silent) { if (kind === 'dino') Sound.eggTok(); else Sound.arrive(kind); }
 }
 
 function updateGhost(gh, dt) {
@@ -1600,6 +2134,16 @@ function updateGhost(gh, dt) {
 
   if (gh.state === 'appear' || gh.state === 'float') {
     if (gh.state === 'appear') {
+      if (isDino(gh) && !gh.hatched) {
+        // the egg wobbles in place, then cracks open
+        gh.scale = 0; gh.alpha = 1;
+        if (gh.t >= 0.7) {
+          gh.hatched = true; gh.t = 0;
+          eggShell(gh.x, gh.y + r * 0.85);
+          if (state.mode !== 'title') Sound.hatch();
+        }
+        return;
+      }
       const k = Math.min(1, gh.t / 0.7);
       gh.scale = easeOutBack(k);
       gh.alpha = Math.min(1, k * 1.6);
@@ -1609,7 +2153,7 @@ function updateGhost(gh, dt) {
       // on the title screen, bob gently beside the title instead of wandering behind it
       const home = anchorPos(gh);
       const tx = home.x + Math.sin(state.time * 0.5 + gh.bob) * 3 * U;
-      const ty = home.y + (isZombie(gh) ? 0 : Math.cos(state.time * 0.4 + gh.bob) * 2 * U);
+      const ty = home.y + (onGround(gh) ? 0 : Math.cos(state.time * 0.4 + gh.bob) * 2 * U);
       gh.vx += ((tx - gh.x) * 2 - gh.vx) * Math.min(1, 2.2 * dt);
       gh.vy += ((ty - gh.y) * 2 - gh.vy) * Math.min(1, 2.2 * dt);
       gh.x += gh.vx * dt;
@@ -1618,7 +2162,7 @@ function updateGhost(gh, dt) {
     }
     gh.heading += rnd(-1, 1) * (isAlien(gh) ? 3.2 : 1.6) * dt;
     const b = ghostBounds(r, gh.kind);
-    const zombie = isZombie(gh);
+    const zombie = onGround(gh);
     // bounce off the edges of the play area so faster ghosts don't stall against them
     if ((gh.x < b.x0 && Math.cos(gh.heading) < 0) || (gh.x > b.x1 && Math.cos(gh.heading) > 0)) gh.heading = Math.PI - gh.heading;
     if ((gh.y < b.y0 && Math.sin(gh.heading) < 0) || (gh.y > b.y1 && Math.sin(gh.heading) > 0)) gh.heading = -gh.heading;
@@ -1663,15 +2207,15 @@ function updateGhost(gh, dt) {
     }
   } else if (gh.state === 'scared') {
     gh.scale = 1 + gh.t * 0.3;
-    if (gh.t >= 0.4 && isZombie(gh)) {
-      // zombies run off the side of the screen, away from Pip
+    if (gh.t >= 0.4 && onGround(gh)) {
+      // zombies and dinosaurs run off the side of the screen, away from Pip
       gh.state = 'away'; gh.t = 0;
       const side = gh.x >= mouse.x ? 1 : -1;
       gh.vx = side * rnd(45, 60) * U;
       gh.vy = 0;
       gh.face = gh.faceK = side;
       gh.scale = 1;
-      Sound.chuckle();
+      if (isDino(gh)) Sound.stompOff(); else Sound.chuckle();
     } else if (gh.t >= 0.4 && isAlien(gh)) {
       // aliens zoom up and away home
       gh.state = 'away'; gh.t = 0;
@@ -1695,7 +2239,7 @@ function updateGhost(gh, dt) {
     gh.scale = Math.max(0.35, gh.scale - dt * 0.4);
     if (Math.random() < dt * 40) trail(gh.x, gh.y + r * 0.3, pick(PARTY_COLORS));
     if (gh.y < -r * 3 || gh.t > 3) gh.dead = true;
-  } else if (gh.state === 'away' && isZombie(gh)) {
+  } else if (gh.state === 'away' && onGround(gh)) {
     gh.vx *= 1 + dt * 1.2;
     gh.x += gh.vx * dt;
     gh.rot = Math.sin(gh.t * 13) * 0.12;
@@ -1720,7 +2264,7 @@ function catchGhost(gh) {
   if (mouse.lock === gh) mouse.lock = null;
   Sound.poof();
   Sound.squeak(0.05);
-  puff(gh.x, gh.y + r * 0.2, isZombie(gh) ? C.dust : gh.tint, r);
+  puff(gh.x, gh.y + r * 0.2, onGround(gh) ? C.dust : gh.tint, r);
   sparks(gh.x, gh.y, 10);
   mouse.hopT = 0;
   // only five stars per level; with a crowd of aliens, extra catches still poof but earn no star
@@ -1813,7 +2357,7 @@ function updateParty(dt) {
     ch.cool -= dt;
     if (ch.gone) {
       ch.scale = Math.max(0, ch.scale - dt * 4);
-    } else if (ch.landed && ch.cool <= 0) {
+    } else if (ch.landed && ch.cool <= 0 && mouse.inK > 0.5) {
       const ms = mouseS(), r = ch.rU * U;
       const headX = mouse.x + Math.sign(mouse.faceK || 1) * ms * 1.1, headY = mouse.y - ms * 0.35;
       if (Math.hypot(mouse.x - ch.x, mouse.y - ch.y) < r * 1.1 + ms * 0.6 || Math.hypot(headX - ch.x, headY - ch.y) < r * 1.1) bite(ch);
@@ -1888,7 +2432,8 @@ function updateMouse(dt) {
   mouse.y = clamp(mouse.y + mouse.vy * dt, b.y0, b.y1);
 
   const speed = Math.hypot(mouse.vx, mouse.vy);
-  if (Math.abs(mouse.vx) > 6 * U) mouse.face = Math.sign(mouse.vx);
+  // (while Pip is going through his door, the door sequence decides which way he faces)
+  if (Math.abs(mouse.vx) > 6 * U && !door.busy) mouse.face = Math.sign(mouse.vx);
   mouse.faceK += (mouse.face - mouse.faceK) * Math.min(1, 14 * dt);
   mouse.run += (Math.min(1, speed / (30 * U)) - mouse.run) * Math.min(1, 10 * dt);
   if (mouse.run > 0.05) mouse.phase += dt * (8 + speed / U * 0.12);
@@ -1900,12 +2445,12 @@ function updateMouse(dt) {
   if (mouse.hopT < 1) mouse.hopT = Math.min(1, mouse.hopT + dt / 0.5);
 }
 function mouseView() {
-  const s = mouseS();
+  const s = mouseS() * (0.3 + 0.7 * mouse.inK);
   const hk = mouse.hopT;
   const jump = hk < 1 ? -Math.sin(Math.PI * hk) * 7 * U : 0;
   const sq = (hk < 1 ? -Math.sin(Math.PI * hk) * 0.12 : 0) + Math.sin(state.time * 3) * 0.015;
   const tilt = clamp(mouse.vy / (115 * U), -1, 1) * 0.35 * (mouse.faceK >= 0 ? 1 : -1);
-  return { x: mouse.x, y: mouse.y + jump, s, face: mouse.faceK, run: mouse.run, phase: mouse.phase, blink: mouse.blink, munch: mouse.munch, t: state.time, tilt, sq };
+  return { x: mouse.x, y: mouse.y + jump, s, face: mouse.faceK, run: mouse.run, phase: mouse.phase, blink: mouse.blink, munch: mouse.munch, t: state.time, tilt, sq, hat: mouse.hat };
 }
 
 /* ---------- hints for little players who get stuck ---------- */
@@ -2041,6 +2586,7 @@ function setTargetFromPoint(x, y, isTap) {
 canvas.addEventListener('pointerdown', e => {
   Sound.unlock();
   if (state.mode === 'title') { startGame(); return; }
+  if (door.busy) return;
   pointer.id = e.pointerId;
   pointer.down = true;
   state.idle = 0;
@@ -2048,7 +2594,7 @@ canvas.addEventListener('pointerdown', e => {
   if (state.time - state.lastSqueak > 0.35) { Sound.squeak(); state.lastSqueak = state.time; }
 });
 canvas.addEventListener('pointermove', e => {
-  if (!pointer.down || e.pointerId !== pointer.id || state.mode === 'title') return;
+  if (!pointer.down || e.pointerId !== pointer.id || state.mode === 'title' || door.busy) return;
   state.idle = 0;
   setTargetFromPoint(e.clientX, e.clientY, false);
 });
@@ -2076,7 +2622,8 @@ kindSelect.addEventListener('change', () => setKind(kindSelect.value, true));
 const KINDS = {
   ghost: { plural: 'Ghosts', scene: 'friendly ghosts floating in the sky' },
   zombie: { plural: 'Zombies', scene: 'friendly zombies wandering the hills' },
-  alien: { plural: 'Aliens', scene: 'lots of friendly aliens zooming about in tiny flying saucers' }
+  alien: { plural: 'Aliens', scene: 'lots of friendly aliens zooming about in tiny flying saucers' },
+  dino: { plural: 'Dinosaurs', scene: 'friendly baby dinosaurs stomping about the hills' }
 };
 function setKind(kind, fromUser) {
   state.kind = KINDS[kind] ? kind : 'ghost';
@@ -2188,6 +2735,8 @@ function goHome() {
   slots.forEach(sl => { sl.filled = false; sl.pop = 0; });
   mouse.lock = null; mouse.lockCheese = false; mouse.munch = 0;
   pointer.down = false;
+  resetDoor();
+  moon.timer = 0; moon.armed = true;
   resetTitleCast();
   homeBtn.hidden = true; homeTip.hidden = true;
   levelEl.hidden = true; bannerEl.hidden = true;
@@ -2253,11 +2802,13 @@ function update(dt) {
     }
   }
 
+  updateDoor(dt);
   updateMouse(dt);
+  updateMoon(dt);
   for (const gh of ghosts) updateGhost(gh, dt);
   ghosts = ghosts.filter(gh => !gh.dead);
 
-  if (state.mode === 'play') {
+  if (state.mode === 'play' && mouse.inK > 0.5) {
     const s = mouseS();
     const headX = mouse.x + Math.sign(mouse.faceK || 1) * s * 1.1, headY = mouse.y - s * 0.35;
     for (const gh of ghosts) {
@@ -2290,17 +2841,24 @@ function render() {
   ctx.drawImage(bg, 0, 0);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawSky(ctx);
+  drawMoon(ctx, state.time);
+  drawDoor(ctx);
   if (party && party.cheese) drawCheese(ctx, party.cheese, state.time);
   for (const gh of ghosts.slice().sort((a, b) => a.y - b.y)) drawEnemy(ctx, gh, state.time, mouse);
 
   const mv = mouseView();
-  ctx.save();
-  ctx.globalAlpha = 0.18;
-  ctx.fillStyle = C.ink;
-  const lift = mouse.y - mv.y;
-  ellipse(ctx, mouse.x, mouse.y + mv.s * 0.92, mv.s * 1.1 * (1 - lift / (20 * U)), mv.s * 0.2); ctx.fill();
-  ctx.restore();
-  drawMouse(ctx, mv);
+  if (mouse.inK > 0.01) {
+    ctx.save();
+    ctx.globalAlpha = 0.18 * mouse.inK * mouse.inK;
+    ctx.fillStyle = C.ink;
+    const lift = mouse.y - mv.y;
+    ellipse(ctx, mouse.x, mouse.y + mv.s * 0.92, mv.s * 1.1 * (1 - lift / (20 * U)), mv.s * 0.2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = mouse.inK;
+    drawMouse(ctx, mv);
+    ctx.restore();
+  }
 
   drawParticles(ctx);
   drawHUD(ctx);

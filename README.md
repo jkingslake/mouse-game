@@ -2,13 +2,25 @@
 
 A gentle tap-and-chase game for toddlers (made for a 2-year-old), built to play on an iPad.
 
-**Ghosts, zombies or aliens?** The start screen has a small "Pip chases" dropdown:
+**Ghosts, zombies, aliens or dinosaurs?** The start screen has a small "Pip chases" dropdown:
 
 - **Ghosts** float in the sky and giggle away upward.
 - **Zombies** are sleepy and rosy-cheeked. They shuffle along the hills and run off the side of the screen chuckling.
 - **Aliens** come in crowds: 6 at once on level 1, rising to 9. They have one, two or three eyes and ride
   tiny flying saucers with twinkly lights. Caught ones zoom off home with a "bee-boo!", and any left when
   the party starts zoom off too.
+- **Dinosaurs** are chubby baby dinos with spiky back plates and toothy grins. Each one hatches from a
+  wobbling speckled egg, stomps along the hills, and runs off with a little "rawr!" when caught.
+
+**Surprises to find:**
+
+- **The moon:** run Pip up to the sleepy moon and it wakes up. It opens its eyes, pulls a silly face and
+  makes a funny noise: a slide whistle, a boing, a raspberry, a big yawn or a "wah-wah-waaah". Then it nods
+  back off.
+- **Pip's front door:** run Pip to the little door and it creaks open. Pip pops inside and comes straight
+  back out with a "ta-da!" in a new hat. Most are ordinary hats (party, top, crown, beanie, chef, propeller,
+  flower, cowboy), but about one time in four he comes out in a very silly one: a rubber duck, a cheese wedge,
+  a wobbly tower of three hats, a ridiculously tall top hat or a stack of pancakes.
 
 The title changes to match, and the game remembers the choice next time. Tapping the dropdown never starts
 the game, and it's hidden during play, so little fingers can't switch it mid-game.
