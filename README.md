@@ -2,6 +2,12 @@
 
 A gentle tap-and-chase game for toddlers (made for a 2-year-old), built to play on an iPad.
 
+**Ghosts or zombies?** The start screen has a small "Pip chases" dropdown. Pick **Ghosts** (they float in
+the sky and giggle away upward) or **Zombies** (sleepy, rosy-cheeked zombies that shuffle along the hills
+and run off the side of the screen chuckling). The title changes to match, and the game remembers the
+choice next time. Tapping the dropdown never starts the game, and it's hidden during play, so little
+fingers can't switch it mid-game.
+
 Pip the mouse lives in a moonlit meadow full of friendly, giggly ghosts. Tap anywhere and Pip scurries
 there. When Pip touches a ghost, it says "oh!", giggles, and floats away, leaving behind a star.
 After five stars there's a fireworks party and a big cheese for Pip to munch. Then the ghosts come back to play again.

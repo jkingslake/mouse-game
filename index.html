@@ -48,6 +48,17 @@
   --firefly: #eaff8f;
   --veil: rgba(18, 20, 60, 0.62);
   --shadow: rgba(10, 8, 30, 0.45);
+  --zombie-skin: #a5d98b;
+  --zombie-shade: #7fbd6c;
+  --zombie-pants: #4a4777;
+  --shirt-lilac: #a493f2;
+  --shirt-sky: #6fb5ea;
+  --shirt-orange: #f5a65b;
+  --shirt-pink: #f08fbb;
+  --shirt-teal: #56c4b0;
+  --dust: #dcc9a6;
+  --chip: rgba(20, 18, 50, 0.6);
+  --chip-line: rgba(255, 247, 230, 0.22);
 
   --font-display: "Grandstander", "Chalkboard SE", ui-rounded, "Comic Sans MS", system-ui, sans-serif;
   --font-body: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -177,6 +188,62 @@ body {
   outline-offset: 8px;
 }
 
+.title__foot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2vmin, 16px);
+}
+.chooser {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 5px 5px 16px;
+  border-radius: 999px;
+  background: var(--chip);
+  border: 2px solid var(--chip-line);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: clamp(15px, 2vmin, 18px);
+  font-weight: 600;
+  cursor: default;
+  touch-action: manipulation;
+}
+.chooser__pick {
+  position: relative;
+  display: inline-flex;
+}
+.chooser select {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  min-height: 40px;
+  padding: 6px 36px 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cheese);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--cheese-deep);
+  font-family: var(--font-display);
+  font-size: 1.1em;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chooser select:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: 3px;
+}
+.chooser__chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 12px;
+  height: 8px;
+  margin-top: -4px;
+  color: var(--ink);
+  pointer-events: none;
+}
 .title__notes {
   flex: none;
   display: flex;
@@ -216,9 +283,21 @@ body {
       <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M38 25 L76 50 L38 75 Z" fill="currentColor" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>
     </button>
   </div>
-  <div class="title__notes">
-    <p>For grown-ups: turn the sound up, then tap or drag to steer Pip. Shoo away five ghosts to earn a cheese party.</p>
-    <p data-repo-only>On iPad, tap Share and then Add to Home Screen for full-screen play.</p>
+  <div class="title__foot">
+    <label class="chooser" id="chooser">
+      <span>Pip chases</span>
+      <span class="chooser__pick">
+        <select id="kind">
+          <option value="ghost">Ghosts</option>
+          <option value="zombie">Zombies</option>
+        </select>
+        <svg class="chooser__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6 10.5 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </label>
+    <div class="title__notes">
+      <p>For grown-ups: turn the sound up, then tap or drag to steer Pip. Shoo away five <span id="kind-word">ghosts</span> to earn a cheese party.</p>
+      <p data-repo-only>On iPad, tap Share and then Add to Home Screen for full-screen play.</p>
+    </div>
   </div>
 </div>
 
@@ -243,11 +322,13 @@ for (const name of [
   'sky-top', 'sky-mid', 'sky-low', 'hill-far', 'hill-near', 'grass', 'moon',
   'cheese', 'cheese-light', 'cheese-deep', 'ghost', 'ghost-mint', 'ghost-pink',
   'ghost-sky', 'ghost-lemon', 'blush', 'fur', 'fur-light', 'ear', 'tail', 'ink',
-  'star', 'cream', 'wood', 'wood-dark', 'firefly'
+  'star', 'cream', 'wood', 'wood-dark', 'firefly', 'zombie-skin', 'zombie-shade', 'zombie-pants',
+  'shirt-lilac', 'shirt-sky', 'shirt-orange', 'shirt-pink', 'shirt-teal', 'dust'
 ]) {
   C[name.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase())] = rootStyle.getPropertyValue('--' + name).trim();
 }
 const GHOST_TINTS = [C.ghost, C.ghostMint, C.ghostPink, C.ghostSky, C.ghostLemon];
+const SHIRTS = [C.shirtLilac, C.shirtSky, C.shirtOrange, C.shirtPink, C.shirtTeal];
 const PARTY_COLORS = [C.cheese, C.blush, C.ghostMint, C.ghostSky, C.star, C.cream];
 
 /* ---------- small helpers ---------- */
@@ -287,6 +368,15 @@ function starPath(g, x, y, R, r, rot) {
     if (i === 0) g.moveTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
     else g.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
   }
+  g.closePath();
+}
+function rrect(g, x, y, w, h, rad) {
+  g.beginPath();
+  g.moveTo(x + rad, y);
+  g.arcTo(x + w, y, x + w, y + h, rad);
+  g.arcTo(x + w, y + h, x, y + h, rad);
+  g.arcTo(x, y + h, x, y, rad);
+  g.arcTo(x, y, x + w, y, rad);
   g.closePath();
 }
 function archPath(g, x, top, w, bottom) {
@@ -448,6 +538,18 @@ const Sound = {
     this.tone({ type: 'sine', f0: f * 2, dur: 0.4, vol: 0.06 });
     this.tone({ type: 'triangle', f0: f * 3, dur: 0.18, vol: 0.025 });
   },
+  // a goofy, sleepy "uhh-uh" with a scuff of dirt: a zombie popping up
+  groan() {
+    this.tone({ type: 'triangle', path: [[0, 210], [0.25, 255], [0.6, 170]], dur: 0.65, vol: 0.18, attack: 0.08, vib: { rate: 7, depth: 10 } });
+    this.tone({ type: 'sine', path: [[0, 105], [0.25, 128], [0.6, 85]], dur: 0.65, vol: 0.1, attack: 0.08 });
+    this.noise({ filter: 'lowpass', f0: 900, f1: 200, dur: 0.35, vol: 0.12 });
+  },
+  // "ho-ho-ho!" and pitter-patter feet: a zombie running off
+  chuckle() {
+    [0, 0.12, 0.24, 0.36].forEach((d, i) => this.tone({ type: 'triangle', f0: 520 - i * 35, f1: 430 - i * 35, dur: 0.1, vol: 0.16, delay: d, vib: { rate: 25, depth: 25 } }));
+    [0, 0.13, 0.26, 0.39].forEach(d => this.noise({ filter: 'bandpass', f0: 650, q: 1.2, dur: 0.07, vol: 0.1, delay: d + 0.45 }));
+  },
+  arrive(kind) { if (kind === 'zombie') this.groan(); else this.wooo(); },
   wooo() {
     this.tone({ type: 'sine', path: [[0, 330], [0.35, 520], [0.9, 360]], dur: 0.95, vol: 0.11, attack: 0.25, vib: { rate: 5.5, depth: 14 } });
   },
@@ -498,7 +600,7 @@ const inset = { top: 0, right: 0, bottom: 0, left: 0 };
 const world = { doorX: 0, homeX: 0, homeY: 0 };
 let skyStars = [], fireflies = [];
 
-const state = { mode: 'title', time: 0, idle: 0, round: 0, caught: 0, filled: 0, spawnTimer: 0, lastSqueak: -1, hintWoo: 3 };
+const state = { kind: 'ghost', mode: 'title', time: 0, idle: 0, round: 0, caught: 0, filled: 0, spawnTimer: 0, lastSqueak: -1, hintWoo: 3 };
 const mouse = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, face: 1, faceK: 1, phase: 0, run: 0, hopT: 1, blink: 0, blinkT: 2.5, munch: 0, lock: null, lockCheese: false, placed: false };
 let ghosts = [], particles = [], flyers = [], timers = [];
 const slots = Array.from({ length: STARS_PER_ROUND }, () => ({ filled: false, pop: 0 }));
@@ -840,6 +942,142 @@ function drawGhost(g, gh, t, look) {
   g.restore();
 }
 
+/* ---------- drawing: zombies (the sleepy, friendly kind) ---------- */
+function drawZombie(g, z, t, look) {
+  const r = z.r || z.rU * U;
+  const happy = z.state === 'away';
+  const scared = z.state === 'scared';
+  const face = z.faceK === undefined ? 1 : z.faceK;
+  const moving = happy ? 1 : clamp(Math.hypot(z.vx || 0, z.vy || 0) / (6 * U), 0, 1);
+  const walk = z.walk || 0;
+  const hop = happy ? Math.abs(Math.sin(z.t * 13)) * r * 0.22 : Math.abs(Math.sin(walk)) * r * 0.05 * moving;
+  const shake = scared ? Math.sin(z.t * 70) * r * 0.05 : 0;
+
+  g.save();
+  // ground shadow
+  g.fillStyle = C.ink;
+  g.globalAlpha = z.alpha * 0.18;
+  ellipse(g, z.x, z.y + r * 1.36 * z.scale, r * 0.6 * z.scale, r * 0.11 * z.scale); g.fill();
+  g.globalAlpha = z.alpha;
+
+  g.translate(z.x + shake, z.y - hop);
+  g.rotate(z.rot);
+  g.scale(z.scale * face, z.scale);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  const outline = rgba(C.ink, 0.25);
+
+  // legs and shoes (back leg first)
+  const swing = Math.sin(walk) * r * 0.13 * moving;
+  for (const [lx, sw] of [[-0.28, -swing], [0.04, swing]]) {
+    g.fillStyle = C.zombiePants;
+    rrect(g, lx * r + sw, 0.7 * r, 0.24 * r, 0.55 * r, 0.08 * r); g.fill();
+    g.fillStyle = C.ink;
+    ellipse(g, (lx + 0.16) * r + sw, 1.27 * r, 0.18 * r, 0.09 * r); g.fill();
+  }
+
+  // arms reach forward (classic zombie), shoot up when surprised, flail when running off
+  const armFront = scared ? -1.3 : happy ? -1.0 + Math.sin(t * 16) * 0.5 : 0.08 + Math.sin(t * 3 + z.arm) * 0.07;
+  const armBack = scared ? -1.15 : happy ? -1.1 + Math.sin(t * 16 + 2) * 0.5 : Math.sin(t * 3 + z.arm + 1.3) * 0.07;
+  const L = 0.78 * r;
+  const arm = (sx, sy, a, col) => {
+    const ex = sx + Math.cos(a) * L, ey = sy + Math.sin(a) * L;
+    g.strokeStyle = col; g.lineWidth = 0.2 * r;
+    g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.stroke();
+    g.fillStyle = col; ellipse(g, ex, ey, 0.13 * r, 0.13 * r); g.fill();
+  };
+  arm(0.05 * r, 0.2 * r, armBack, C.zombieShade);
+
+  // shirt with a raggedy hem and a patch
+  g.fillStyle = z.tint;
+  g.beginPath();
+  g.moveTo(-0.42 * r, 0.82 * r);
+  g.lineTo(-0.46 * r, 0.28 * r);
+  g.quadraticCurveTo(-0.44 * r, 0, -0.12 * r, 0);
+  g.lineTo(0.18 * r, 0);
+  g.quadraticCurveTo(0.48 * r, 0, 0.46 * r, 0.28 * r);
+  g.lineTo(0.42 * r, 0.82 * r);
+  for (let i = 1; i <= 8; i++) g.lineTo(0.42 * r - 0.84 * r * i / 8, 0.82 * r + (i % 2 ? 0.1 * r : 0));
+  g.closePath();
+  g.fill();
+  g.strokeStyle = outline; g.lineWidth = 0.04 * r; g.stroke();
+  g.fillStyle = rgba(C.cream, 0.35);
+  rrect(g, -0.3 * r, 0.38 * r, 0.2 * r, 0.18 * r, 0.03 * r); g.fill();
+
+  // front arm with a sleeve
+  arm(0.12 * r, 0.3 * r, armFront, C.zombieSkin);
+  g.strokeStyle = z.tint; g.lineWidth = 0.27 * r;
+  g.beginPath(); g.moveTo(0.1 * r, 0.27 * r); g.lineTo(0.1 * r + Math.cos(armFront) * 0.28 * r, 0.27 * r + Math.sin(armFront) * 0.28 * r); g.stroke();
+
+  // big round head, ear, hair tuft, forehead stitches
+  const hx = 0.06 * r, hy = -0.5 * r, hr = 0.6 * r;
+  g.fillStyle = C.zombieShade; ellipse(g, hx - hr * 0.88, hy + 0.05 * r, 0.13 * r, 0.17 * r); g.fill();
+  g.fillStyle = C.zombieSkin; ellipse(g, hx, hy, hr, hr * 0.95); g.fill();
+  g.strokeStyle = outline; g.lineWidth = 0.04 * r; g.stroke();
+  g.strokeStyle = C.ink; g.lineWidth = 0.05 * r;
+  g.beginPath();
+  g.moveTo(hx - 0.1 * r, hy - hr * 0.93); g.quadraticCurveTo(hx - 0.2 * r, hy - hr * 1.25, hx - 0.32 * r, hy - hr * 1.2);
+  g.moveTo(hx, hy - hr * 0.95); g.quadraticCurveTo(hx + 0.02 * r, hy - hr * 1.32, hx + 0.12 * r, hy - hr * 1.38);
+  g.moveTo(hx + 0.1 * r, hy - hr * 0.93); g.quadraticCurveTo(hx + 0.25 * r, hy - hr * 1.2, hx + 0.35 * r, hy - hr * 1.12);
+  g.stroke();
+  g.strokeStyle = rgba(C.ink, 0.45); g.lineWidth = 0.03 * r;
+  g.beginPath();
+  g.moveTo(hx - 0.34 * r, hy - 0.35 * r); g.lineTo(hx - 0.06 * r, hy - 0.42 * r);
+  for (let i = 0; i < 3; i++) {
+    const sx = hx - 0.29 * r + i * 0.09 * r, sy = hy - 0.365 * r - i * 0.022 * r;
+    g.moveTo(sx, sy - 0.05 * r); g.lineTo(sx, sy + 0.05 * r);
+  }
+  g.stroke();
+
+  // face: one eye a bit bigger than the other, sleepy lids, rosy cheeks
+  let lx = 0, ly = 0;
+  if (look) {
+    lx = clamp((look.x - z.x) / (r * 5), -1, 1) * r * 0.05 * (face < 0 ? -1 : 1);
+    ly = clamp((look.y - z.y) / (r * 5), -1, 1) * r * 0.04;
+  }
+  const mode = scared ? 'surprised' : happy ? 'giggle' : (z.nervous > 0.45 ? 'oo' : 'smile');
+  const eyes = [[hx - 0.04 * r, hy - 0.06 * r, 1], [hx + 0.3 * r, hy - 0.08 * r, 0.82]];
+  g.fillStyle = C.blush; g.globalAlpha = z.alpha * 0.55;
+  ellipse(g, hx - 0.22 * r, hy + 0.2 * r, 0.11 * r, 0.065 * r); g.fill();
+  ellipse(g, hx + 0.46 * r, hy + 0.18 * r, 0.09 * r, 0.06 * r); g.fill();
+  g.globalAlpha = z.alpha;
+  g.strokeStyle = C.ink; g.lineWidth = 0.06 * r;
+  const mx = hx + 0.13 * r, my = hy + 0.2 * r;
+  if (mode === 'giggle') {
+    for (const [ex, ey, sz] of eyes) { g.beginPath(); g.arc(ex, ey + 0.03 * r, 0.09 * r * sz, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+    g.fillStyle = C.ink; g.beginPath(); g.arc(mx, my + 0.02 * r, 0.16 * r, 0, Math.PI); g.closePath(); g.fill();
+    g.fillStyle = C.blush; ellipse(g, mx, my + 0.12 * r, 0.07 * r, 0.04 * r); g.fill();
+  } else {
+    const big = mode === 'surprised' ? 1.25 : mode === 'oo' ? 1.1 : 1;
+    for (const [ex, ey, sz] of eyes) {
+      const er = 0.13 * r * sz * big;
+      g.fillStyle = C.ghost; ellipse(g, ex, ey, er, er * 1.1); g.fill();
+      g.fillStyle = C.ink; ellipse(g, ex + lx, ey + ly + er * 0.1, er * 0.55, er * 0.6); g.fill();
+      if (mode === 'smile') {
+        g.fillStyle = C.zombieShade;
+        g.beginPath();
+        if (z.blink > 0) g.ellipse(ex, ey, er * 1.08, er * 1.18, 0, 0, TAU);
+        else g.ellipse(ex, ey, er * 1.08, er * 1.18, 0, Math.PI, TAU);
+        g.closePath(); g.fill();
+      }
+    }
+    g.fillStyle = C.ink;
+    if (mode === 'smile') {
+      g.beginPath(); g.arc(mx, my, 0.14 * r, 0.05 * Math.PI, 0.95 * Math.PI); g.closePath(); g.fill();
+      g.fillStyle = C.ghost; g.fillRect(mx + 0.03 * r, my, 0.06 * r, 0.06 * r);
+    } else if (mode === 'oo') {
+      ellipse(g, mx, my + 0.04 * r, 0.06 * r, 0.075 * r); g.fill();
+    } else {
+      ellipse(g, mx, my + 0.07 * r, 0.1 * r, 0.13 * r); g.fill();
+    }
+  }
+  g.restore();
+}
+function drawEnemy(g, gh, t, look) {
+  if (gh.kind === 'zombie') drawZombie(g, gh, t, look);
+  else drawGhost(g, gh, t, look);
+}
+
 /* ---------- drawing: the reward cheese ---------- */
 const BITES = [[1.12, -0.05, 0.36], [0.5, -0.22, 0.38]];
 function drawCheese(g, ch, t) {
@@ -922,6 +1160,15 @@ function crumbs(x, y) {
 }
 function ripple(x, y) {
   addP({ type: 'ring', x, y, max: 0.45, size: 9 * U, color: C.cream });
+}
+function dirt(x, y) {
+  for (let i = 0; i < 12; i++) {
+    addP({ type: 'crumb', x: x + rnd(-3, 3) * U, y, vx: rnd(-14, 14) * U, vy: rnd(-26, -10) * U, g: 80 * U, max: rnd(0.4, 0.8), size: rnd(0.6, 1.2) * U, color: pick([C.dust, C.hillNear, C.grass]), rot: rnd(0, TAU), vr: rnd(-10, 10) });
+  }
+  addP({ type: 'puff', x, y: y - U, max: 0.5, size: 4 * U, color: C.dust });
+}
+function dust(x, y) {
+  addP({ type: 'puff', x, y, vx: rnd(-4, 4) * U, vy: -rnd(2, 6) * U, drag: 2, max: rnd(0.35, 0.6), size: rnd(1.2, 2.2) * U, color: C.dust });
 }
 function trail(x, y, color) {
   addP({ type: 'trail', x: x + rnd(-2, 2) * U, y: y + rnd(-2, 2) * U, vy: rnd(2, 6) * U, max: rnd(0.4, 0.7), size: rnd(0.7, 1.2) * U, color, rot: rnd(0, TAU) });
@@ -1007,41 +1254,67 @@ const catchable = gh => gh.state === 'float' || (gh.state === 'appear' && gh.sca
 function ghostSpeedFactor(round) {
   return 1 + 1.2 * (1 - Math.pow(0.88, round));
 }
-function ghostBounds(r) {
+const isZombie = gh => gh.kind === 'zombie';
+
+// Where each kind may roam: ghosts float in the sky, zombies walk along the hills.
+function ghostBounds(r, kind) {
   const b = {
     x0: r + 3 * U + inset.left,
     x1: W - r - 3 * U - inset.right,
     y0: inset.top + 18 * U + r * 0.5,
     y1: H * 0.76
   };
+  if (kind === 'zombie') {
+    b.x0 = r * 1.1 + 3 * U + inset.left;
+    b.x1 = W - r * 1.1 - 3 * U - inset.right;
+    b.y0 = Math.max(H * 0.62, inset.top + 30 * U);
+    b.y1 = H - r * 1.4 - 3 * U - inset.bottom;
+  }
   if (b.x1 < b.x0) b.x0 = b.x1 = W / 2;
   if (b.y1 < b.y0) b.y0 = b.y1 = H / 2;
   return b;
 }
+// Title-screen spots beside the title card (zombies stand on the hill there).
+const TITLE_SPOTS = { ghost: [[0.14, 0.38], [0.86, 0.62]], zombie: [[0.7, 0], [0.9, 0]] };
+function anchorPos(gh) {
+  const x = gh.anchor[0] * W;
+  return { x, y: isZombie(gh) ? nearHillY(x) - gh.rU * U * 1.3 : gh.anchor[1] * H };
+}
+function resetTitleCast() {
+  ghosts = [];
+  TITLE_SPOTS[state.kind].forEach(a => spawnGhost({ silent: true, instant: true, anchor: a }));
+}
+
 function spawnGhost(opts) {
   opts = opts || {};
+  const kind = state.kind;
   const rU = rnd(7.2, 9);
   const r = rU * U;
-  const b = ghostBounds(r);
+  const b = ghostBounds(r, kind);
   let x, y, tries = 0;
   do {
     x = rnd(b.x0, b.x1); y = rnd(b.y0, b.y1); tries++;
   } while (tries < 30 && (Math.hypot(x - mouse.x, y - mouse.y) < 34 * U || ghosts.some(o => Math.hypot(o.x - x, o.y - y) < (o.rU + rU) * U * 1.3)));
+  const palette = kind === 'zombie' ? SHIRTS : GHOST_TINTS;
   const used = ghosts.map(o => o.tint);
-  const free = GHOST_TINTS.filter(c => !used.includes(c));
-  if (opts.anchor) { x = opts.anchor[0] * W; y = opts.anchor[1] * H; }
-  ghosts.push({
-    x, y, rU, vx: 0, vy: 0, anchor: opts.anchor || null,
+  const free = palette.filter(c => !used.includes(c));
+  const face = opts.anchor ? (opts.anchor[0] > 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
+  const gh = {
+    kind, x, y, rU, vx: 0, vy: 0, anchor: opts.anchor || null,
+    face, faceK: face, walk: rnd(0, TAU),
     heading: rnd(0, TAU),
     speedK: ghostSpeedFactor(state.round),
     speedU: rnd(9, 11) * ghostSpeedFactor(state.round),
     state: opts.instant ? 'float' : 'appear', t: 0,
     scale: opts.instant ? 1 : 0, alpha: opts.instant ? 1 : 0,
     rot: 0, bob: rnd(0, 10), arm: rnd(0, 10),
-    tint: pick(free.length ? free : GHOST_TINTS),
+    tint: pick(free.length ? free : palette),
     nervous: 0, blink: 0, blinkT: rnd(1, 4), spin: 1, dead: false
-  });
-  if (!opts.silent) Sound.wooo();
+  };
+  if (gh.anchor) { const p = anchorPos(gh); gh.x = p.x; gh.y = p.y; }
+  ghosts.push(gh);
+  if (kind === 'zombie' && !opts.instant) dirt(gh.x, gh.y + r * 1.3);
+  if (!opts.silent) Sound.arrive(kind);
 }
 
 function updateGhost(gh, dt) {
@@ -1060,8 +1333,9 @@ function updateGhost(gh, dt) {
     }
     if (state.mode === 'title' && gh.anchor) {
       // on the title screen, bob gently beside the title instead of wandering behind it
-      const tx = gh.anchor[0] * W + Math.sin(state.time * 0.5 + gh.bob) * 3 * U;
-      const ty = gh.anchor[1] * H + Math.cos(state.time * 0.4 + gh.bob) * 2 * U;
+      const home = anchorPos(gh);
+      const tx = home.x + Math.sin(state.time * 0.5 + gh.bob) * 3 * U;
+      const ty = home.y + (isZombie(gh) ? 0 : Math.cos(state.time * 0.4 + gh.bob) * 2 * U);
       gh.vx += ((tx - gh.x) * 2 - gh.vx) * Math.min(1, 2.2 * dt);
       gh.vy += ((ty - gh.y) * 2 - gh.vy) * Math.min(1, 2.2 * dt);
       gh.x += gh.vx * dt;
@@ -1069,12 +1343,14 @@ function updateGhost(gh, dt) {
       return;
     }
     gh.heading += rnd(-1, 1) * 1.6 * dt;
-    const b = ghostBounds(r);
+    const b = ghostBounds(r, gh.kind);
+    const zombie = isZombie(gh);
     // bounce off the edges of the play area so faster ghosts don't stall against them
     if ((gh.x < b.x0 && Math.cos(gh.heading) < 0) || (gh.x > b.x1 && Math.cos(gh.heading) > 0)) gh.heading = Math.PI - gh.heading;
     if ((gh.y < b.y0 && Math.sin(gh.heading) < 0) || (gh.y > b.y1 && Math.sin(gh.heading) > 0)) gh.heading = -gh.heading;
     const sp = gh.speedU * U;
-    let dvx = Math.cos(gh.heading) * sp, dvy = Math.sin(gh.heading) * sp * 0.75;
+    // zombies shuffle mostly sideways along the hills; ghosts drift every which way
+    let dvx = Math.cos(gh.heading) * sp, dvy = Math.sin(gh.heading) * sp * (zombie ? 0.35 : 0.75);
 
     // a gentle "eek!" drift away from Pip — always much slower than Pip
     let nerv = 0;
@@ -1085,7 +1361,7 @@ function updateGhost(gh, dt) {
         const f = 1 - d / R, flee = 20 * U * (1 + (gh.speedK - 1) * 0.5) * f;
         nerv = f;
         dvx += dx / d * flee;
-        dvy += dy / d * flee;
+        dvy += dy / d * flee * (zombie ? 0.5 : 1);
       }
     }
     gh.nervous += (Math.min(1, nerv * 2) - gh.nervous) * Math.min(1, 6 * dt);
@@ -1105,10 +1381,24 @@ function updateGhost(gh, dt) {
     gh.vy += (dvy - gh.vy) * k;
     gh.x += gh.vx * dt;
     gh.y += gh.vy * dt;
-    gh.rot += (clamp(gh.vx / (40 * U), -1, 1) * 0.22 - gh.rot) * Math.min(1, 4 * dt);
+    gh.rot += (clamp(gh.vx / (40 * U), -1, 1) * (zombie ? 0.1 : 0.22) - gh.rot) * Math.min(1, 4 * dt);
+    if (zombie) {
+      gh.walk += dt * (3 + Math.hypot(gh.vx, gh.vy) / U * 0.35);
+      if (Math.abs(gh.vx) > 3 * U) gh.face = Math.sign(gh.vx);
+      gh.faceK += (gh.face - gh.faceK) * Math.min(1, 10 * dt);
+    }
   } else if (gh.state === 'scared') {
     gh.scale = 1 + gh.t * 0.3;
-    if (gh.t >= 0.4) {
+    if (gh.t >= 0.4 && isZombie(gh)) {
+      // zombies run off the side of the screen, away from Pip
+      gh.state = 'away'; gh.t = 0;
+      const side = gh.x >= mouse.x ? 1 : -1;
+      gh.vx = side * rnd(45, 60) * U;
+      gh.vy = 0;
+      gh.face = gh.faceK = side;
+      gh.scale = 1;
+      Sound.chuckle();
+    } else if (gh.t >= 0.4) {
       gh.state = 'away'; gh.t = 0;
       const side = gh.x < W / 2 ? -1 : 1;
       gh.vx = side * rnd(25, 40) * U;
@@ -1116,6 +1406,12 @@ function updateGhost(gh, dt) {
       gh.spin = side;
       Sound.giggle();
     }
+  } else if (gh.state === 'away' && isZombie(gh)) {
+    gh.vx *= 1 + dt * 1.2;
+    gh.x += gh.vx * dt;
+    gh.rot = Math.sin(gh.t * 13) * 0.12;
+    if (Math.random() < dt * 14) dust(gh.x - Math.sign(gh.vx) * r * 0.3, gh.y + r * 1.3);
+    if (gh.x < -r * 3 || gh.x > W + r * 3 || gh.t > 4) gh.dead = true;
   } else if (gh.state === 'away') {
     gh.vy -= 60 * U * dt;
     gh.vx *= 1 + dt * 0.8;
@@ -1137,7 +1433,7 @@ function catchGhost(gh) {
   const idx = state.caught - 1;
   Sound.poof();
   Sound.squeak(0.05);
-  puff(gh.x, gh.y + r * 0.2, gh.tint, r);
+  puff(gh.x, gh.y + r * 0.2, isZombie(gh) ? C.dust : gh.tint, r);
   sparks(gh.x, gh.y, 10);
   mouse.hopT = 0;
   later(0.25, () => launchStar(gh.x, gh.y, idx));
@@ -1473,6 +1769,32 @@ for (const type of ['touchend', 'pointerup', 'click', 'keydown']) {
   document.addEventListener(type, () => Sound.unlock(), { capture: true, passive: true });
 }
 titleEl.addEventListener('pointerup', () => { Sound.unlock(); startGame(); });
+
+/* ---------- ghosts or zombies? (chosen on the start screen) ---------- */
+const kindSelect = document.getElementById('kind');
+const chooserEl = document.getElementById('chooser');
+const restEl = document.querySelector('.title__rest');
+const kindWordEl = document.getElementById('kind-word');
+// taps on the chooser must not start the game
+for (const type of ['pointerdown', 'pointerup', 'click']) chooserEl.addEventListener(type, e => e.stopPropagation());
+kindSelect.addEventListener('change', () => setKind(kindSelect.value, true));
+
+function setKind(kind, fromUser) {
+  state.kind = kind === 'zombie' ? 'zombie' : 'ghost';
+  kindSelect.value = state.kind;
+  const plural = state.kind === 'zombie' ? 'Zombies' : 'Ghosts';
+  restEl.textContent = 'and the ' + plural;
+  kindWordEl.textContent = plural.toLowerCase();
+  canvas.setAttribute('aria-label', state.kind === 'zombie'
+    ? 'Pip the mouse in a moonlit meadow, with friendly zombies wandering the hills'
+    : 'Pip the mouse in a moonlit meadow, with friendly ghosts floating in the sky');
+  try { localStorage.setItem('pip-kind', state.kind); } catch (e) { /* remembering is optional */ }
+  if (state.mode === 'title') {
+    for (const gh of ghosts) puff(gh.x, gh.y + gh.rU * U * 0.2, C.cream, gh.rU * U * 0.8);
+    resetTitleCast();
+    if (fromUser) { Sound.unlock(); Sound.poof(); Sound.arrive(state.kind); }
+  }
+}
 titleEl.addEventListener('click', () => { Sound.unlock(); startGame(); });
 
 // stop iPad zoom, scroll bounce, long-press menus and double-tap zoom
@@ -1543,7 +1865,7 @@ function update(dt) {
 
   const live = ghosts.filter(gh => gh.state === 'appear' || gh.state === 'float').length;
   if (state.mode === 'title') {
-    if (live < 2) spawnGhost({ silent: true, anchor: live ? [0.86, 0.62] : [0.14, 0.38] });
+    if (live < 2) spawnGhost({ silent: true, anchor: TITLE_SPOTS[state.kind][live ? 1 : 0] });
   } else if (state.mode === 'play') {
     const maxG = state.round === 0 ? 2 : 3;
     if (live < maxG && state.caught + live < STARS_PER_ROUND) {
@@ -1572,7 +1894,7 @@ function update(dt) {
   const h = hintTarget();
   if (h && h.ghost) {
     state.hintWoo -= dt;
-    if (state.hintWoo <= 0) { Sound.wooo(); state.hintWoo = 5; }
+    if (state.hintWoo <= 0) { Sound.arrive(h.ghost.kind); state.hintWoo = 5; }
   } else {
     state.hintWoo = 1.5;
   }
@@ -1589,7 +1911,7 @@ function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawSky(ctx);
   if (party && party.cheese) drawCheese(ctx, party.cheese, state.time);
-  for (const gh of ghosts) drawGhost(ctx, gh, state.time, mouse);
+  for (const gh of ghosts.slice().sort((a, b) => a.y - b.y)) drawEnemy(ctx, gh, state.time, mouse);
 
   const mv = mouseView();
   ctx.save();
@@ -1618,8 +1940,9 @@ function frame(now) {
 }
 
 resize();
-spawnGhost({ silent: true, instant: true, anchor: [0.14, 0.38] });
-spawnGhost({ silent: true, instant: true, anchor: [0.86, 0.62] });
+let savedKind = 'ghost';
+try { savedKind = localStorage.getItem('pip-kind') || 'ghost'; } catch (e) { /* first visit or storage blocked */ }
+setKind(savedKind, false);
 render();
 requestAnimationFrame(frame);
 </script>
