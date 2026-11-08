@@ -2,11 +2,20 @@
 
 A gentle tap-and-chase game for toddlers (made for a 2-year-old), built to play on an iPad.
 
-**Ghosts or zombies?** The start screen has a small "Pip chases" dropdown. Pick **Ghosts** (they float in
-the sky and giggle away upward) or **Zombies** (sleepy, rosy-cheeked zombies that shuffle along the hills
-and run off the side of the screen chuckling). The title changes to match, and the game remembers the
-choice next time. Tapping the dropdown never starts the game, and it's hidden during play, so little
-fingers can't switch it mid-game.
+**Ghosts, zombies or aliens?** The start screen has a small "Pip chases" dropdown:
+
+- **Ghosts** float in the sky and giggle away upward.
+- **Zombies** are sleepy and rosy-cheeked. They shuffle along the hills and run off the side of the screen chuckling.
+- **Aliens** come in crowds: 6 at once on level 1, rising to 9. They have one, two or three eyes and ride
+  tiny flying saucers with twinkly lights. Caught ones zoom off home with a "bee-boo!", and any left when
+  the party starts zoom off too.
+
+The title changes to match, and the game remembers the choice next time. Tapping the dropdown never starts
+the game, and it's hidden during play, so little fingers can't switch it mid-game.
+
+**Going back to the start screen:** press and hold the house button in the top-left corner for one second
+(a ring fills up as you hold). A quick tap only shows "Hold to go back", so a toddler can't leave by accident.
+Going back resets to level 1.
 
 Pip the mouse lives in a moonlit meadow full of friendly, giggly ghosts. Tap anywhere and Pip scurries
 there. When Pip touches a ghost, it says "oh!", giggles, and floats away, leaving behind a star.
@@ -17,7 +26,8 @@ After five stars there's a fireworks party and a big cheese for Pip to munch. Th
 - **No way to lose.** There's no timer, score or game over.
 - **Big targets.** Tapping on or near a ghost sends Pip straight to it. Ghosts drift away slowly but
   are always much slower than Pip.
-- **Levels.** Each cheese party starts a new level, and the ghosts float a little faster every level.
+- **Levels.** A "Level" badge sits in the top-right corner, and a big "Level 2!" pops up with a jingle
+  each time a cheese party ends. The ghosts float a little faster every level.
   The speed-up gets smaller each time and levels off at just over twice the starting pace, so the
   ghosts never get too fast to catch.
 - **No reading needed.** Progress shows as five stars at the top of the screen.
