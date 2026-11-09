@@ -56,19 +56,16 @@ After five stars there's a fireworks party and a big cheese for Oliver to munch.
 The game is a plain web page with no build step: `index.html` plus a few small files. To turn it into an
 app on the iPad, put it on a free web host once, then add it to the Home Screen.
 
-**1. Put it online (once).** The repository is private, so use Netlify, which is free and can deploy from a
-private GitHub repository. Everything below works in Safari on the iPad.
+**1. Put it online (once) with GitHub Pages.**
 
-1. Go to <https://app.netlify.com/signup> and sign up with GitHub.
-2. Choose **Add new site → Import an existing project → GitHub**, and allow Netlify to see
-   `jkingslake/mouse-game`.
-3. Pick the branch with the game (`claude/awesome-heisenberg-rjlhfl`, or `main` once it's merged). Leave
-   the build command **empty** and set the publish directory to `.` (a single dot).
-4. Tap **Deploy**. Netlify gives the site an address like `something.netlify.app`. You can rename it under
-   **Site configuration → Change site name**. Netlify redeploys automatically whenever the branch changes.
+1. On GitHub, open the repository's **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
+3. Pick the branch with the game (`claude/awesome-heisenberg-rjlhfl`, or `main` once it's merged), choose
+   `/ (root)`, and tap **Save**.
+4. After a minute or two the game is live at **https://jkingslake.github.io/mouse-game/**. GitHub
+   republishes it automatically whenever that branch changes.
 
-(If you'd rather make the repository public, GitHub Pages works too: **Settings → Pages → Deploy from a
-branch**, pick the branch and `/ (root)`, and the game appears at `https://jkingslake.github.io/mouse-game/`.)
+(The empty `.nojekyll` file tells GitHub Pages to serve the files exactly as they are.)
 
 **2. Add it to the Home Screen.**
 
