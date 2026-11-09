@@ -2,7 +2,7 @@
 // The game is saved on the device the first time it loads, so the Home Screen app opens
 // without internet. When online, the newest version is fetched first, so updates still arrive.
 
-const CACHE = 'oliver-v1';
+const CACHE = 'oliver-v2';
 const CORE = [
   './',
   'index.html',
@@ -12,8 +12,26 @@ const CORE = [
   'icon-512.png'
 ];
 
+// The rounded title font comes from Google Fonts; save it at install time too, so even the very
+// first offline launch shows it. (If that fails, the iPad's own rounded font is used instead.)
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Grandstander:wght@700;900&display=swap';
+async function saveFont(cache) {
+  try {
+    const res = await fetch(FONT_CSS);
+    if (!res.ok) return;
+    const css = await res.clone().text();
+    await cache.put(FONT_CSS, res);
+    const files = [...css.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]);
+    await Promise.all(files.map(u => fetch(u).then(r => r.ok ? cache.put(u, r) : null).catch(() => null)));
+  } catch (e) { /* the fallback font is fine */ }
+}
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(CORE).then(() => saveFont(cache)))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', event => {
