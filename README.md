@@ -53,13 +53,32 @@ After five stars there's a fireworks party and a big cheese for Oliver to munch.
 
 ## Playing on an iPad
 
-The whole game is the single file `index.html`. It has no build step and no dependencies.
+The game is a plain web page with no build step: `index.html` plus a few small files. To turn it into an
+app on the iPad, put it on a free web host once, then add it to the Home Screen.
 
-1. Host the repository on any static web host. With GitHub Pages: **Settings → Pages → Deploy from a
-   branch**, then pick the branch and `/ (root)`.
-2. Open the page in Safari on the iPad.
-3. Tap **Share → Add to Home Screen**. Oliver then opens full screen from its own icon, with no address bar
-   for small fingers to bump.
+**1. Put it online (once).** The repository is private, so use Netlify, which is free and can deploy from a
+private GitHub repository. Everything below works in Safari on the iPad.
+
+1. Go to <https://app.netlify.com/signup> and sign up with GitHub.
+2. Choose **Add new site → Import an existing project → GitHub**, and allow Netlify to see
+   `jkingslake/mouse-game`.
+3. Pick the branch with the game (`claude/awesome-heisenberg-rjlhfl`, or `main` once it's merged). Leave
+   the build command **empty** and set the publish directory to `.` (a single dot).
+4. Tap **Deploy**. Netlify gives the site an address like `something.netlify.app`. You can rename it under
+   **Site configuration → Change site name**. Netlify redeploys automatically whenever the branch changes.
+
+(If you'd rather make the repository public, GitHub Pages works too: **Settings → Pages → Deploy from a
+branch**, pick the branch and `/ (root)`, and the game appears at `https://jkingslake.github.io/mouse-game/`.)
+
+**2. Add it to the Home Screen.**
+
+1. Open the site's address in **Safari** on the iPad. Other browsers can't install Home Screen apps on iPad.
+2. Tap the **Share** button, then **Add to Home Screen**, then **Add**.
+3. Oliver now has his own icon. It opens full screen with no address bar for small fingers to bump.
+
+**Works offline.** The first time the app opens, it saves itself on the iPad (`sw.js`). After that it opens
+and plays with no internet, and it fetches the newest version whenever it's online. Open it once while
+online after an update, then close and reopen it to see the changes.
 
 Touch handling is tuned for iPad: pinch-zoom, double-tap zoom, scroll bounce and long-press menus are all
 turned off, and the screen stays awake while playing (on iPadOS 16.4 or later).
@@ -78,4 +97,5 @@ inside the game.
 | --- | --- |
 | `index.html` | The whole game: canvas drawing, touch input and Web Audio sounds |
 | `manifest.webmanifest` | Lets the game install to the Home Screen and open full screen |
+| `sw.js` | Saves the game on the device so the Home Screen app works offline |
 | `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` | Home Screen icons |

@@ -3024,6 +3024,14 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Offline play once installed from a web host (sw.js sits next to this file). Some previews
+// don't allow this at all, which is fine: the game simply runs online there.
+window.addEventListener('load', () => {
+  try {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  } catch (e) { /* not available here */ }
+});
+
 resize();
 let savedKind = 'ghost';
 try { savedKind = localStorage.getItem('pip-kind') || 'ghost'; } catch (e) { /* first visit or storage blocked */ }
