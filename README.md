@@ -72,7 +72,7 @@ branch**, pick the branch and `/ (root)`, and the game appears at `https://jking
 
 **2. Add it to the Home Screen.**
 
-1. Open the site's address in **Safari** on the iPad. Other browsers can't install Home Screen apps on iPad.
+1. Open the site's address in **Safari** on the iPad (Safari is the most reliable for this).
 2. Tap the **Share** button, then **Add to Home Screen**, then **Add**.
 3. Oliver now has his own icon. It opens full screen with no address bar for small fingers to bump.
 
