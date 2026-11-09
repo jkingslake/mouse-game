@@ -1,8 +1,8 @@
-# Pip and the Ghosts
+# Oliver and the Ghosts
 
 A gentle tap-and-chase game for toddlers (made for a 2-year-old), built to play on an iPad.
 
-**Ghosts, zombies, aliens or dinosaurs?** The start screen has a small "Pip chases" dropdown:
+**Ghosts, zombies, aliens, dinosaurs or diggers?** The start screen has a small "Oliver chases" dropdown:
 
 - **Ghosts** float in the sky and giggle away upward.
 - **Zombies** are sleepy and rosy-cheeked. They shuffle along the hills and run off the side of the screen chuckling.
@@ -11,13 +11,16 @@ A gentle tap-and-chase game for toddlers (made for a 2-year-old), built to play 
   the party starts zoom off too.
 - **Dinosaurs** are chubby baby dinos with spiky back plates and toothy grins. Each one hatches from a
   wobbling speckled egg, stomps along the hills, and runs off with a little "rawr!" when caught.
+- **Diggers** are little excavators in bright colours, with big eyes in the cab window, a scooping arm,
+  rolling tracks, a blinking roof light and puffs of smoke. They pop up out of a pile of dirt with a
+  "beep-beep!". When caught, they back away still facing Oliver, beeping like a real reversing digger.
 
 **Surprises to find:**
 
-- **The moon:** run Pip up to the sleepy moon and it wakes up. It opens its eyes, pulls a silly face and
+- **The moon:** run Oliver up to the sleepy moon and it wakes up. It opens its eyes, pulls a silly face and
   makes a funny noise: a slide whistle, a boing, a raspberry, a big yawn or a "wah-wah-waaah". Then it nods
   back off.
-- **Pip's front door:** run Pip to the little door and it creaks open. Pip pops inside and comes straight
+- **Oliver's front door:** run Oliver to the little door and it creaks open. Oliver pops inside and comes straight
   back out with a "ta-da!" in a new hat. Most are ordinary hats (party, top, crown, beanie, chef, propeller,
   flower, cowboy), but about one time in four he comes out in a very silly one: a rubber duck, a cheese wedge,
   a wobbly tower of three hats, a ridiculously tall top hat or a stack of pancakes.
@@ -29,15 +32,15 @@ the game, and it's hidden during play, so little fingers can't switch it mid-gam
 (a ring fills up as you hold). A quick tap only shows "Hold to go back", so a toddler can't leave by accident.
 Going back resets to level 1.
 
-Pip the mouse lives in a moonlit meadow full of friendly, giggly ghosts. Tap anywhere and Pip scurries
-there. When Pip touches a ghost, it says "oh!", giggles, and floats away, leaving behind a star.
-After five stars there's a fireworks party and a big cheese for Pip to munch. Then the ghosts come back to play again.
+Oliver the mouse lives in a moonlit meadow full of friendly, giggly ghosts. Tap anywhere and Oliver scurries
+there. When Oliver touches a ghost, it says "oh!", giggles, and floats away, leaving behind a star.
+After five stars there's a fireworks party and a big cheese for Oliver to munch. Then the ghosts come back to play again.
 
 ## Made for little hands
 
 - **No way to lose.** There's no timer, score or game over.
-- **Big targets.** Tapping on or near a ghost sends Pip straight to it. Ghosts drift away slowly but
-  are always much slower than Pip.
+- **Big targets.** Tapping on or near a ghost sends Oliver straight to it. Ghosts drift away slowly but
+  are always much slower than Oliver.
 - **Levels.** A "Level" badge sits in the top-right corner, and a big "Level 2!" pops up with a jingle
   each time a cheese party ends. The ghosts float a little faster every level.
   The speed-up gets smaller each time and levels off at just over twice the starting pace, so the
@@ -55,7 +58,7 @@ The whole game is the single file `index.html`. It has no build step and no depe
 1. Host the repository on any static web host. With GitHub Pages: **Settings → Pages → Deploy from a
    branch**, then pick the branch and `/ (root)`.
 2. Open the page in Safari on the iPad.
-3. Tap **Share → Add to Home Screen**. Pip then opens full screen from its own icon, with no address bar
+3. Tap **Share → Add to Home Screen**. Oliver then opens full screen from its own icon, with no address bar
    for small fingers to bump.
 
 Touch handling is tuned for iPad: pinch-zoom, double-tap zoom, scroll bounce and long-press menus are all

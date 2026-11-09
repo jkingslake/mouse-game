@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Pip and the Ghosts</title>
+<title>Oliver and the Ghosts</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="A gentle tap-and-chase game for toddlers: help Pip the mouse shoo the giggly ghosts away.">
+<meta name="description" content="A gentle tap-and-chase game for toddlers: help Oliver the mouse shoo the giggly ghosts away.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pip">
+<meta name="apple-mobile-web-app-title" content="Oliver">
 <meta name="theme-color" content="#1f2460">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
@@ -72,6 +72,13 @@
   --dino-pink: #ff8fb3;
   --dino-belly: #ffeab8;
   --egg: #fff4dc;
+  --digger-yellow: #ffc23d;
+  --digger-orange: #ff8c42;
+  --digger-red: #f26b5b;
+  --digger-green: #69c26b;
+  --digger-blue: #4fa2ec;
+  --tread: #3d3755;
+  --glass-blue: #bfe8ff;
   --chip: rgba(20, 18, 50, 0.6);
   --chip-line: rgba(255, 247, 230, 0.22);
 
@@ -158,8 +165,8 @@ body {
   text-wrap: balance;
   line-height: 0.9;
 }
-.title__pip {
-  font-size: clamp(84px, 21vmin, 220px);
+.title__hero {
+  font-size: clamp(72px, 18vmin, 190px);
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--cheese);
@@ -398,36 +405,37 @@ body {
   15%, 80% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .play, .title__pip { animation: none; }
+  .play, .title__hero { animation: none; }
   .title { transition: opacity 0.2s linear; }
 }
 </style>
 </head>
 <body>
-<canvas id="stage" role="img" aria-label="Pip the mouse in a moonlit meadow, with friendly ghosts floating in the sky"></canvas>
+<canvas id="stage" role="img" aria-label="Oliver the mouse in a moonlit meadow, with friendly ghosts floating in the sky"></canvas>
 
 <div id="title" class="title">
   <div class="title__main">
-    <h1 class="title__name"><span class="title__pip">Pip</span><span class="title__rest">and the Ghosts</span></h1>
+    <h1 class="title__name"><span class="title__hero">Oliver</span><span class="title__rest">and the Ghosts</span></h1>
     <button id="play" class="play" type="button" aria-label="Play">
       <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M38 25 L76 50 L38 75 Z" fill="currentColor" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/></svg>
     </button>
   </div>
   <div class="title__foot">
     <label class="chooser" id="chooser">
-      <span>Pip chases</span>
+      <span>Oliver chases</span>
       <span class="chooser__pick">
         <select id="kind">
           <option value="ghost">Ghosts</option>
           <option value="zombie">Zombies</option>
           <option value="alien">Aliens</option>
           <option value="dino">Dinosaurs</option>
+          <option value="digger">Diggers</option>
         </select>
         <svg class="chooser__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6 10.5 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </span>
     </label>
     <div class="title__notes">
-      <p>For grown-ups: turn the sound up, then tap or drag to steer Pip. Shoo away five <span id="kind-word">ghosts</span> to earn a cheese party.</p>
+      <p>For grown-ups: turn the sound up, then tap or drag to steer Oliver. Shoo away five <span id="kind-word">ghosts</span> to earn a cheese party.</p>
       <p data-repo-only>On iPad, tap Share and then Add to Home Screen for full-screen play.</p>
     </div>
   </div>
@@ -447,8 +455,8 @@ body {
 'use strict';
 
 /* ------------------------------------------------------------------
-   Pip and the Ghosts — a no-lose chase game for very small hands.
-   Tap anywhere: Pip scurries there. Touch a ghost: it giggles away
+   Oliver and the Ghosts — a no-lose chase game for very small hands.
+   Tap anywhere: Oliver scurries there. Touch a ghost: it giggles away
    and leaves a star. Five stars: fireworks and a cheese to munch.
 ------------------------------------------------------------------- */
 
@@ -465,7 +473,8 @@ for (const name of [
   'star', 'cream', 'wood', 'wood-dark', 'firefly', 'zombie-skin', 'zombie-shade', 'zombie-pants',
   'shirt-lilac', 'shirt-sky', 'shirt-orange', 'shirt-pink', 'shirt-teal', 'dust',
   'alien-lime', 'alien-pink', 'alien-sky', 'alien-orange', 'alien-violet', 'saucer', 'saucer-dark',
-  'dino-teal', 'dino-orange', 'dino-purple', 'dino-blue', 'dino-pink', 'dino-belly', 'egg'
+  'dino-teal', 'dino-orange', 'dino-purple', 'dino-blue', 'dino-pink', 'dino-belly', 'egg',
+  'digger-yellow', 'digger-orange', 'digger-red', 'digger-green', 'digger-blue', 'tread', 'glass-blue'
 ]) {
   C[name.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase())] = rootStyle.getPropertyValue('--' + name).trim();
 }
@@ -473,6 +482,7 @@ const GHOST_TINTS = [C.ghost, C.ghostMint, C.ghostPink, C.ghostSky, C.ghostLemon
 const SHIRTS = [C.shirtLilac, C.shirtSky, C.shirtOrange, C.shirtPink, C.shirtTeal];
 const ALIEN_SKINS = [C.alienLime, C.alienPink, C.alienSky, C.alienOrange, C.alienViolet];
 const DINO_SKINS = [C.dinoTeal, C.dinoOrange, C.dinoPurple, C.dinoBlue, C.dinoPink];
+const DIGGER_PAINT = [C.diggerYellow, C.diggerOrange, C.diggerRed, C.diggerGreen, C.diggerBlue];
 const GLASS = rootStyle.getPropertyValue('--glass').trim();
 const PARTY_COLORS = [C.cheese, C.blush, C.ghostMint, C.ghostSky, C.star, C.cream];
 
@@ -766,8 +776,21 @@ const Sound = {
     this.tone({ type: 'sine', f0: 140, f1: 60, dur: 0.15, vol: 0.25 });
     this.noise({ filter: 'lowpass', f0: 500, dur: 0.1, vol: 0.12 });
   },
+  // diggers: a friendly "beep-beep!" and, when chased off, the reversing beeper
+  beepBeep() {
+    [0, 0.2].forEach(d => {
+      this.tone({ type: 'triangle', f0: 523, dur: 0.14, vol: 0.12, delay: d });
+      this.tone({ type: 'triangle', f0: 659, dur: 0.14, vol: 0.12, delay: d });
+    });
+    this.tone({ type: 'sawtooth', f0: 75, f1: 60, dur: 0.6, vol: 0.04, vib: { rate: 16, depth: 8 } });
+  },
+  reversing() {
+    [0, 0.32, 0.64, 0.96].forEach(d => this.tone({ type: 'sine', f0: 1050, dur: 0.16, vol: 0.13, attack: 0.01, delay: d }));
+    this.tone({ type: 'sawtooth', f0: 80, f1: 58, dur: 1.2, vol: 0.05, vib: { rate: 18, depth: 8 } });
+  },
   arrive(kind) {
-    if (kind === 'zombie') this.groan();
+    if (kind === 'digger') this.beepBeep();
+    else if (kind === 'zombie') this.groan();
     else if (kind === 'alien') this.beamIn();
     else if (kind === 'dino') this.rawr();
     else this.wooo();
@@ -824,7 +847,7 @@ let skyStars = [], fireflies = [];
 
 const state = { kind: 'ghost', mode: 'title', time: 0, idle: 0, round: 0, caught: 0, filled: 0, spawnTimer: 0, lastSqueak: -1, hintWoo: 3 };
 const mouse = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, face: 1, faceK: 1, phase: 0, run: 0, hopT: 1, blink: 0, blinkT: 2.5, munch: 0, lock: null, lockCheese: false, placed: false, inK: 1, hat: null, hatSilly: false };
-// the moon wakes up when Pip visits; the front door opens when Pip goes to it
+// the moon wakes up when Oliver visits; the front door opens when Oliver goes to it
 const moon = { awake: 0, timer: 0, variant: -1, armed: true, wobble: 0 };
 const door = { open: 0, phase: 'idle', t: 0, armed: true, busy: false };
 let ghosts = [], particles = [], flyers = [], timers = [];
@@ -909,7 +932,7 @@ function buildBackground() {
   hill.addColorStop(1, C.hillNear);
   g.fillStyle = hill; g.fill();
 
-  // Pip's front door, dug into the near hill (the frame lives here; the door itself is drawn
+  // Oliver's front door, dug into the near hill (the frame lives here; the door itself is drawn
   // every frame so it can creak open)
   const dx = 13 * U + inset.left;
   const y0 = nearHillY(dx);
@@ -975,7 +998,7 @@ function seedSky() {
   }
 }
 
-/* ---------- drawing: Pip ---------- */
+/* ---------- drawing: Oliver ---------- */
 function drawMouse(g, m) {
   const s = m.s, run = m.run || 0, ph = m.phase || 0, t = m.t || 0, munch = m.munch || 0;
   g.save();
@@ -1061,7 +1084,7 @@ function drawMouse(g, m) {
   g.restore();
 }
 
-/* ---------- hats (Pip gets a new one each trip through the front door) ---------- */
+/* ---------- hats (Oliver gets a new one each trip through the front door) ---------- */
 const HATS = ['party', 'top', 'crown', 'beanie', 'chef', 'propeller', 'flower', 'cowboy'];
 const SILLY_HATS = ['duck', 'cheese', 'tower', 'giant', 'pancakes'];
 function pickHat() {
@@ -1656,8 +1679,123 @@ function drawDino(g, z, t, look) {
   g.restore();
 }
 
+/* ---------- drawing: little diggers ---------- */
+function drawDigger(g, z, t, look) {
+  const r = z.r || z.rU * U;
+  const happy = z.state === 'away', scared = z.state === 'scared';
+  const face = z.faceK === undefined ? 1 : z.faceK;
+  const roll = z.walk || 0;
+  const rumble = Math.abs(Math.sin(t * 38 + z.bob)) * r * 0.015 + (happy ? Math.abs(Math.sin(z.t * 18)) * r * 0.05 : 0);
+  const shake = scared ? Math.sin(z.t * 70) * r * 0.05 : 0;
+  g.save();
+  g.fillStyle = C.ink; g.globalAlpha = z.alpha * 0.2;
+  ellipse(g, z.x, z.y + r * 1.34 * z.scale, r * 0.9 * z.scale, r * 0.11 * z.scale); g.fill();
+  g.globalAlpha = z.alpha;
+  g.translate(z.x + shake, z.y - rumble);
+  g.rotate(z.rot);
+  g.scale(z.scale * face, z.scale);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  const outline = rgba(C.ink, 0.25);
+  const paint = z.tint;
+
+  // exhaust pipe (behind the cab)
+  g.fillStyle = C.tread; rrect(g, -r * 0.52, -r * 0.66, r * 0.09, r * 0.4, r * 0.03); g.fill();
+
+  // the arm: boom, stick and a toothy bucket. It scoops when idle, shoots up when
+  // surprised, and waves about while reversing away.
+  let a1, a2, curl;
+  if (scared) { a1 = -1.45; a2 = -0.7; curl = -0.6; }
+  else if (happy) { a1 = -1.15 + Math.sin(t * 14) * 0.3; a2 = -0.4 + Math.sin(t * 14 + 1) * 0.5; curl = 0; }
+  else { const sc = Math.sin(t * 1.8 + z.arm); a1 = -0.85 + sc * 0.15; a2 = 1.1 + sc * 0.3; curl = 0.5 + sc * 0.4; }
+  const sx = r * 0.06, sy = r * 0.15;
+  const ex = sx + Math.cos(a1) * r * 0.78, ey = sy + Math.sin(a1) * r * 0.78;
+  const bx = ex + Math.cos(a2) * r * 0.56, by = ey + Math.sin(a2) * r * 0.56;
+  g.strokeStyle = paint; g.lineWidth = r * 0.17;
+  g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.lineTo(bx, by); g.stroke();
+  g.strokeStyle = C.saucer; g.lineWidth = r * 0.05;
+  g.beginPath(); g.moveTo(sx + r * 0.08, sy + r * 0.12); g.lineTo(sx + (ex - sx) * 0.6 + r * 0.05, sy + (ey - sy) * 0.6 + r * 0.06); g.stroke();
+  g.fillStyle = C.tread; ellipse(g, ex, ey, r * 0.07, r * 0.07); g.fill();
+  g.save();
+  g.translate(bx, by);
+  g.rotate(a2 + curl);
+  g.fillStyle = C.saucerDark;
+  g.beginPath();
+  g.moveTo(0, -r * 0.13);
+  g.lineTo(r * 0.24, -r * 0.18);
+  g.quadraticCurveTo(r * 0.36, r * 0.1, r * 0.06, r * 0.2);
+  g.quadraticCurveTo(-r * 0.07, r * 0.1, 0, -r * 0.13);
+  g.closePath(); g.fill();
+  g.strokeStyle = outline; g.lineWidth = r * 0.03; g.stroke();
+  g.fillStyle = C.ghost;
+  for (let i = 0; i < 3; i++) {
+    const tx = r * (0.24 + i * 0.035), ty = -r * (0.18 - i * 0.1);
+    g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + r * 0.08, ty + r * 0.02); g.lineTo(tx + r * 0.01, ty + r * 0.06); g.closePath(); g.fill();
+  }
+  g.restore();
+  g.fillStyle = C.tread; ellipse(g, bx, by, r * 0.06, r * 0.06); g.fill();
+
+  // caterpillar tracks with turning wheels and moving lugs
+  g.fillStyle = C.tread; rrect(g, -r * 0.8, r * 0.92, r * 1.44, r * 0.4, r * 0.2); g.fill();
+  for (let i = 0; i < 4; i++) {
+    const wx = -r * 0.58 + i * r * 0.33, wy = r * 1.12;
+    g.fillStyle = C.saucer; ellipse(g, wx, wy, r * 0.12, r * 0.12); g.fill();
+    const a = roll * 1.5 + i;
+    g.strokeStyle = C.tread; g.lineWidth = r * 0.035;
+    g.beginPath(); g.moveTo(wx + Math.cos(a) * r * 0.1, wy + Math.sin(a) * r * 0.1); g.lineTo(wx - Math.cos(a) * r * 0.1, wy - Math.sin(a) * r * 0.1); g.stroke();
+  }
+  g.fillStyle = rgba(C.cream, 0.28);
+  const step = r * 0.2, off = ((roll * r * 0.08) % step + step) % step;
+  for (let x = -r * 0.64 + off; x < r * 0.5; x += step) g.fillRect(x, r * 0.935, r * 0.06, r * 0.04);
+
+  // chassis and cab
+  g.strokeStyle = outline; g.lineWidth = r * 0.04;
+  g.fillStyle = paint; rrect(g, -r * 0.72, r * 0.4, r * 1.24, r * 0.56, r * 0.1); g.fill(); g.stroke();
+  g.fillStyle = rgba(C.ink, 0.14); rrect(g, -r * 0.72, r * 0.78, r * 1.24, r * 0.18, r * 0.06); g.fill();
+  g.fillStyle = paint; rrect(g, -r * 0.62, -r * 0.5, r * 0.72, r * 0.98, r * 0.14); g.fill(); g.stroke();
+  g.fillStyle = Math.sin(t * 6 + z.arm) > 0 ? C.shirtOrange : C.cheese;
+  ellipse(g, -r * 0.26, -r * 0.56, r * 0.07, r * 0.06); g.fill();
+  g.fillStyle = C.glassBlue; rrect(g, -r * 0.52, -r * 0.4, r * 0.54, r * 0.42, r * 0.09); g.fill();
+  g.strokeStyle = rgba(C.ghost, 0.6); g.lineWidth = r * 0.04;
+  g.beginPath(); g.moveTo(-r * 0.12, -r * 0.36); g.lineTo(-r * 0.02, -r * 0.26); g.stroke();
+
+  // face: eyes in the cab window, a smile on the cab
+  let lx = 0, ly = 0;
+  if (look) {
+    lx = clamp((look.x - z.x) / (r * 5), -1, 1) * r * 0.035 * (face < 0 ? -1 : 1);
+    ly = clamp((look.y - z.y) / (r * 5), -1, 1) * r * 0.03;
+  }
+  const mode = scared ? 'surprised' : happy ? 'giggle' : (z.nervous > 0.45 ? 'oo' : 'smile');
+  const eyes = [-r * 0.36, -r * 0.14], ey0 = -r * 0.19;
+  g.fillStyle = C.blush; g.globalAlpha = z.alpha * 0.6;
+  ellipse(g, -r * 0.48, r * 0.19, r * 0.08, r * 0.05); g.fill();
+  ellipse(g, -r * 0.02, r * 0.19, r * 0.08, r * 0.05); g.fill();
+  g.globalAlpha = z.alpha;
+  g.strokeStyle = C.ink; g.lineWidth = r * 0.05;
+  const mx = -r * 0.25, my = r * 0.16;
+  if (mode === 'giggle') {
+    for (const x of eyes) { g.beginPath(); g.arc(x, ey0 + r * 0.03, r * 0.08, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+    g.fillStyle = C.ink; g.beginPath(); g.arc(mx, my, r * 0.12, 0, Math.PI); g.closePath(); g.fill();
+    g.fillStyle = C.blush; ellipse(g, mx, my + r * 0.08, r * 0.055, r * 0.03); g.fill();
+  } else {
+    const er = r * 0.095 * (mode === 'surprised' ? 1.3 : mode === 'oo' ? 1.12 : 1);
+    for (const x of eyes) {
+      if (z.blink > 0 && mode === 'smile') { g.beginPath(); g.moveTo(x - er, ey0); g.lineTo(x + er, ey0); g.stroke(); continue; }
+      g.fillStyle = C.ghost; ellipse(g, x, ey0, er, er * 1.1); g.fill();
+      g.fillStyle = C.ink; ellipse(g, x + lx, ey0 + ly, er * 0.55, er * 0.6); g.fill();
+      g.fillStyle = C.ghost; ellipse(g, x + lx + er * 0.2, ey0 + ly - er * 0.25, er * 0.18, er * 0.18); g.fill();
+    }
+    g.fillStyle = C.ink;
+    if (mode === 'smile') { g.beginPath(); g.arc(mx, my - r * 0.05, r * 0.12, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke(); }
+    else if (mode === 'oo') { ellipse(g, mx, my, r * 0.05, r * 0.06); g.fill(); }
+    else { ellipse(g, mx, my + r * 0.02, r * 0.08, r * 0.1); g.fill(); }
+  }
+  g.restore();
+}
+
 function drawEnemy(g, gh, t, look) {
-  if (gh.kind === 'zombie') drawZombie(g, gh, t, look);
+  if (gh.kind === 'digger') drawDigger(g, gh, t, look);
+  else if (gh.kind === 'zombie') drawZombie(g, gh, t, look);
   else if (gh.kind === 'alien') drawAlien(g, gh, t, look);
   else if (gh.kind === 'dino') drawDino(g, gh, t, look);
   else drawGhost(g, gh, t, look);
@@ -1690,7 +1828,7 @@ function drawMoon(g, t) {
     for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * mr * 0.34, -mr * 0.08, mr * 0.13, 0.12 * Math.PI, 0.88 * Math.PI); g.stroke(); }
     g.beginPath(); g.arc(0, mr * 0.2, mr * 0.22, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
   } else {
-    // big eyes that look at Pip (or spin round for the boing)
+    // big eyes that look at Oliver (or spin round for the boing)
     const look = Math.atan2(mouse.y - my, mouse.x - mx);
     for (const sx of [-1, 1]) {
       const ex = sx * mr * 0.34, ey = -mr * 0.12, er = mr * 0.2;
@@ -1735,11 +1873,11 @@ function updateMoon(dt) {
   moon.awake += (target - moon.awake) * Math.min(1, (target ? 14 : 5) * dt);
   moon.wobble = Math.max(0, moon.wobble - dt * 0.7);
   if (state.mode === 'title' || door.busy) return;
-  // while the moon is awake and Pip has stopped beside it, Pip looks up at it
+  // while the moon is awake and Oliver has stopped beside it, Oliver looks up at it
   if (moon.timer > 0 && Math.hypot(mouse.vx, mouse.vy) < 10 * U) mouse.face = Math.sign(world.moonX - mouse.x) || 1;
   const d = Math.hypot(mouse.x - world.moonX, mouse.y - world.moonY);
   if (!moon.armed) {
-    // Pip has to wander off (and the moon nod off again) before it can be woken a second time
+    // Oliver has to wander off (and the moon nod off again) before it can be woken a second time
     if (d > world.moonR + mouseS() * 2.2 && moon.timer <= 0) moon.armed = true;
     return;
   }
@@ -1753,7 +1891,7 @@ function updateMoon(dt) {
     Sound.moonNoise(v);
     sparks(world.moonX, world.moonY, 10, C.moon, 28);
     mouse.hopT = 0;
-    // Pip hops to the moon's side and looks at it, so its silly face can be seen
+    // Oliver hops to the moon's side and looks at it, so its silly face can be seen
     const side = world.moonX - world.moonR - mouseS() * 1.5 > 8 * U ? -1 : 1;
     mouse.lock = null; mouse.lockCheese = false;
     mouse.tx = world.moonX + side * (world.moonR + mouseS() * 1.5);
@@ -1762,7 +1900,7 @@ function updateMoon(dt) {
   }
 }
 
-/* ---------- Pip's front door: in he goes, out he comes in a new hat ---------- */
+/* ---------- Oliver's front door: in he goes, out he comes in a new hat ---------- */
 function drawDoor(g) {
   const dx = world.doorX, top = world.doorTop, bot = world.doorBot, dw = world.doorW;
   const open = door.open;
@@ -1792,7 +1930,7 @@ function drawDoor(g) {
 }
 function updateDoor(dt) {
   const s = mouseS();
-  const cx = world.doorX, cy = world.doorBot - s * 0.75;   // where Pip stands in the doorway
+  const cx = world.doorX, cy = world.doorBot - s * 0.75;   // where Oliver stands in the doorway
   door.t += dt;
   switch (door.phase) {
     case 'idle': {
@@ -1800,7 +1938,7 @@ function updateDoor(dt) {
       if (state.mode === 'title') return;
       const d = Math.hypot(mouse.x - cx, mouse.y - cy);
       if (!door.armed) { if (d > 12 * U) door.armed = true; return; }
-      // open as Pip runs up to the door (he was sent there), or if he wanders right onto it
+      // open as Oliver runs up to the door (he was sent there), or if he wanders right onto it
       const headingIn = Math.hypot(mouse.tx - cx, mouse.ty - cy) < 9 * U && d < world.doorW / 2 + s * 1.6;
       if ((headingIn || d < 7 * U) && mouse.hopT >= 1) {
         door.waitX = Math.max(mouse.x, cx + world.doorW / 2 + s * 1.1);
@@ -2031,14 +2169,15 @@ const catchable = gh => gh.state === 'float' || (gh.state === 'appear' && gh.sca
 // Ghosts get a little faster every level (level 1 is round 0). Each step is smaller than the
 // last, so the speed keeps creeping up but levels off just over twice the starting pace:
 // level 2 is +14%, level 3 +27%, level 5 +48%, level 10 +82%. Even the fastest ghost is
-// still well under Pip's top speed, so every ghost can always be caught.
+// still well under Oliver's top speed, so every ghost can always be caught.
 function ghostSpeedFactor(round) {
   return 1 + 1.2 * (1 - Math.pow(0.88, round));
 }
 const isZombie = gh => gh.kind === 'zombie';
 const isDino = gh => gh.kind === 'dino';
-// zombies and dinosaurs walk along the hills; ghosts and aliens fly
-const onGround = gh => gh.kind === 'zombie' || gh.kind === 'dino';
+const isDigger = gh => gh.kind === 'digger';
+// zombies, dinosaurs and diggers move along the hills; ghosts and aliens fly
+const onGround = gh => gh.kind === 'zombie' || gh.kind === 'dino' || gh.kind === 'digger';
 function eggShell(x, y) {
   for (let i = 0; i < 12; i++) {
     addP({ type: 'crumb', x: x + rnd(-2, 2) * U, y, vx: rnd(-20, 20) * U, vy: rnd(-30, -10) * U, g: 80 * U, max: rnd(0.5, 0.9), size: rnd(0.9, 1.6) * U, color: pick([C.egg, C.cream, C.dinoBelly]), rot: rnd(0, TAU), vr: rnd(-12, 12) });
@@ -2061,7 +2200,7 @@ function ghostBounds(r, kind) {
     y0: inset.top + 18 * U + r * 0.5,
     y1: H * 0.76
   };
-  if (kind === 'zombie' || kind === 'dino') {
+  if (kind === 'zombie' || kind === 'dino' || kind === 'digger') {
     b.x0 = r * 1.1 + 3 * U + inset.left;
     b.x1 = W - r * 1.1 - 3 * U - inset.right;
     b.y0 = Math.max(H * 0.62, inset.top + 30 * U);
@@ -2076,7 +2215,8 @@ const TITLE_SPOTS = {
   ghost: [[0.14, 0.38], [0.86, 0.62]],
   zombie: [[0.7, 0], [0.9, 0]],
   alien: [[0.12, 0.3], [0.88, 0.62], [0.2, 0.55], [0.8, 0.4]],
-  dino: [[0.68, 0], [0.9, 0]]
+  dino: [[0.68, 0], [0.9, 0]],
+  digger: [[0.68, 0], [0.9, 0]]
 };
 function anchorPos(gh) {
   const x = gh.anchor[0] * W;
@@ -2097,7 +2237,7 @@ function spawnGhost(opts) {
   do {
     x = rnd(b.x0, b.x1); y = rnd(b.y0, b.y1); tries++;
   } while (tries < 30 && (Math.hypot(x - mouse.x, y - mouse.y) < 34 * U || ghosts.some(o => Math.hypot(o.x - x, o.y - y) < (o.rU + rU) * U * 1.3)));
-  const palette = kind === 'zombie' ? SHIRTS : kind === 'alien' ? ALIEN_SKINS : kind === 'dino' ? DINO_SKINS : GHOST_TINTS;
+  const palette = { zombie: SHIRTS, alien: ALIEN_SKINS, dino: DINO_SKINS, digger: DIGGER_PAINT }[kind] || GHOST_TINTS;
   const used = ghosts.map(o => o.tint);
   const free = palette.filter(c => !used.includes(c));
   const face = opts.anchor ? (opts.anchor[0] > 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
@@ -2120,7 +2260,7 @@ function spawnGhost(opts) {
     gh.hatched = !!opts.instant;
   }
   ghosts.push(gh);
-  if (kind === 'zombie' && !opts.instant) dirt(gh.x, gh.y + r * 1.3);
+  if ((kind === 'zombie' || kind === 'digger') && !opts.instant) dirt(gh.x, gh.y + r * 1.3);
   if (kind === 'alien' && !opts.instant) { ripple(gh.x, gh.y); sparks(gh.x, gh.y, 5, gh.tint, 18); }
   if (!opts.silent) { if (kind === 'dino') Sound.eggTok(); else Sound.arrive(kind); }
 }
@@ -2170,7 +2310,7 @@ function updateGhost(gh, dt) {
     // zombies shuffle mostly sideways along the hills; ghosts drift every which way
     let dvx = Math.cos(gh.heading) * sp, dvy = Math.sin(gh.heading) * sp * (zombie ? 0.35 : 0.75);
 
-    // a gentle "eek!" drift away from Pip — always much slower than Pip
+    // a gentle "eek!" drift away from Oliver — always much slower than Oliver
     let nerv = 0;
     if (state.mode === 'play') {
       const dx = gh.x - mouse.x, dy = gh.y - mouse.y, d = Math.hypot(dx, dy) || 1, R = 34 * U;
@@ -2200,6 +2340,9 @@ function updateGhost(gh, dt) {
     gh.x += gh.vx * dt;
     gh.y += gh.vy * dt;
     gh.rot += (clamp(gh.vx / (40 * U), -1, 1) * (zombie ? 0.1 : 0.22) - gh.rot) * Math.min(1, 4 * dt);
+    if (isDigger(gh) && Math.random() < dt * 1.6) {
+      addP({ type: 'puff', x: gh.x - gh.faceK * r * 0.48, y: gh.y - r * 0.7, vy: -rnd(4, 8) * U, vx: -gh.faceK * rnd(1, 3) * U, max: rnd(0.6, 0.9), size: rnd(0.8, 1.3) * U, color: C.cream });
+    }
     if (zombie) {
       gh.walk += dt * (3 + Math.hypot(gh.vx, gh.vy) / U * 0.35);
       if (Math.abs(gh.vx) > 3 * U) gh.face = Math.sign(gh.vx);
@@ -2208,14 +2351,16 @@ function updateGhost(gh, dt) {
   } else if (gh.state === 'scared') {
     gh.scale = 1 + gh.t * 0.3;
     if (gh.t >= 0.4 && onGround(gh)) {
-      // zombies and dinosaurs run off the side of the screen, away from Pip
+      // zombies and dinosaurs run off the side of the screen, away from Oliver
       gh.state = 'away'; gh.t = 0;
       const side = gh.x >= mouse.x ? 1 : -1;
       gh.vx = side * rnd(45, 60) * U;
       gh.vy = 0;
       gh.face = gh.faceK = side;
       gh.scale = 1;
-      if (isDino(gh)) Sound.stompOff(); else Sound.chuckle();
+      if (isDigger(gh)) { gh.face = gh.faceK = -side; gh.vx *= 0.8; Sound.reversing(); }
+      else if (isDino(gh)) Sound.stompOff();
+      else Sound.chuckle();
     } else if (gh.t >= 0.4 && isAlien(gh)) {
       // aliens zoom up and away home
       gh.state = 'away'; gh.t = 0;
@@ -2242,6 +2387,7 @@ function updateGhost(gh, dt) {
   } else if (gh.state === 'away' && onGround(gh)) {
     gh.vx *= 1 + dt * 1.2;
     gh.x += gh.vx * dt;
+    if (isDigger(gh)) gh.walk -= dt * 14;   // tracks roll backwards
     gh.rot = Math.sin(gh.t * 13) * 0.12;
     if (Math.random() < dt * 14) dust(gh.x - Math.sign(gh.vx) * r * 0.3, gh.y + r * 1.3);
     if (gh.x < -r * 3 || gh.x > W + r * 3 || gh.t > 4) gh.dead = true;
@@ -2399,7 +2545,7 @@ function endParty() {
   Sound.levelUp();
 }
 
-/* ---------- Pip ---------- */
+/* ---------- Oliver ---------- */
 function mouseBounds() {
   return {
     x0: 8 * U + inset.left, x1: W - 8 * U - inset.right,
@@ -2432,7 +2578,7 @@ function updateMouse(dt) {
   mouse.y = clamp(mouse.y + mouse.vy * dt, b.y0, b.y1);
 
   const speed = Math.hypot(mouse.vx, mouse.vy);
-  // (while Pip is going through his door, the door sequence decides which way he faces)
+  // (while Oliver is going through his door, the door sequence decides which way he faces)
   if (Math.abs(mouse.vx) > 6 * U && !door.busy) mouse.face = Math.sign(mouse.vx);
   mouse.faceK += (mouse.face - mouse.faceK) * Math.min(1, 14 * dt);
   mouse.run += (Math.min(1, speed / (30 * U)) - mouse.run) * Math.min(1, 10 * dt);
@@ -2623,7 +2769,8 @@ const KINDS = {
   ghost: { plural: 'Ghosts', scene: 'friendly ghosts floating in the sky' },
   zombie: { plural: 'Zombies', scene: 'friendly zombies wandering the hills' },
   alien: { plural: 'Aliens', scene: 'lots of friendly aliens zooming about in tiny flying saucers' },
-  dino: { plural: 'Dinosaurs', scene: 'friendly baby dinosaurs stomping about the hills' }
+  dino: { plural: 'Dinosaurs', scene: 'friendly baby dinosaurs stomping about the hills' },
+  digger: { plural: 'Diggers', scene: 'friendly little diggers rumbling about the hills' }
 };
 function setKind(kind, fromUser) {
   state.kind = KINDS[kind] ? kind : 'ghost';
@@ -2631,7 +2778,7 @@ function setKind(kind, fromUser) {
   const plural = KINDS[state.kind].plural;
   restEl.textContent = 'and the ' + plural;
   kindWordEl.textContent = plural.toLowerCase();
-  canvas.setAttribute('aria-label', 'Pip the mouse in a moonlit meadow, with ' + KINDS[state.kind].scene);
+  canvas.setAttribute('aria-label', 'Oliver the mouse in a moonlit meadow, with ' + KINDS[state.kind].scene);
   try { localStorage.setItem('pip-kind', state.kind); } catch (e) { /* remembering is optional */ }
   if (state.mode === 'title') {
     for (const gh of ghosts) puff(gh.x, gh.y + gh.rU * U * 0.2, C.cream, gh.rU * U * 0.8);
@@ -2695,7 +2842,7 @@ const homeTip = document.getElementById('home-tip');
 const HOLD_SECONDS = 1;
 const RING_LEN = 145;
 let homeHold = null, tipTimer = 0;
-// After a hold sends Pip home, the finger lifting off lands on the start screen; ignore that one tap.
+// After a hold sends Oliver home, the finger lifting off lands on the start screen; ignore that one tap.
 let suppressStart = false;
 function setRing(p) { homeRing.style.strokeDashoffset = String(RING_LEN * (1 - p)); }
 function cancelHold() {

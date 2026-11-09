@@ -1,7 +1,7 @@
 {
-  "name": "Pip and the Ghosts",
-  "short_name": "Pip",
-  "description": "A gentle tap-and-chase game for toddlers: help Pip the mouse shoo the giggly ghosts away.",
+  "name": "Oliver and the Ghosts",
+  "short_name": "Oliver",
+  "description": "A gentle tap-and-chase game for toddlers: help Oliver the mouse shoo the giggly ghosts away.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
@@ -9,8 +9,20 @@
   "background_color": "#1f2460",
   "theme_color": "#1f2460",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
   ]
 }
